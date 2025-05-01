@@ -19,6 +19,12 @@
     <OutputPath>bin\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="externals\rdpwrap.dll" />
+    <None Remove="externals\rdpwrap.ini" />
+    <None Remove="externals\RDPWrapOffsetFinder.exe" />
+    <None Remove="externals\Zydis.dll" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Update="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
@@ -29,6 +35,12 @@
       <SubType>Form</SubType>
     </Compile>
     <Content Include="app.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="externals\rdpwrap.dll" />
+    <EmbeddedResource Include="externals\rdpwrap.ini" />
+    <EmbeddedResource Include="externals\RDPWrapOffsetFinder.exe" />
+    <EmbeddedResource Include="externals\Zydis.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />

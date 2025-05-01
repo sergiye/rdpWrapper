@@ -72,6 +72,7 @@ namespace rdpWrapper {
       refreshTimer.Tick += timerTick;
       refreshTimer.Interval = 1000;
 
+#if !DEBUG
       var timer = new Timer();
       timer.Tick += (_, _) => {
         timer.Enabled = false;
@@ -79,6 +80,7 @@ namespace rdpWrapper {
       };
       timer.Interval = 1000;
       timer.Enabled = true;
+#endif
     }
 
     [DllImport("user32.dll")]
@@ -96,7 +98,9 @@ namespace rdpWrapper {
       switch ((int)m.WParam) {
         case MF_SYS_MENU_ABOUT_ID:
           var asm = GetType().Assembly;
-          MessageBox.Show($"{Updater.ApplicationTitle} {asm.GetName().Version.ToString(3)} {(Environment.Is64BitProcess ? "x64" : "x32")}\nWritten by Sergiy Egoshyn (egoshin.sergey@gmail.com)", Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+          if (MessageBox.Show($"{Updater.ApplicationTitle} {asm.GetName().Version.ToString(3)} {(Environment.Is64BitProcess ? "x64" : "x32")}\nWritten by Sergiy Egoshyn (egoshin.sergey@gmail.com)\nDo you want to know more?", Updater.ApplicationTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes) {
+            Process.Start("https://github.com/sergiye/" + Updater.ApplicationName);
+          }
           break;
         case MF_SYS_MENU_CHECK_UPDATES:
           Updater.CheckForUpdates(false);
@@ -219,6 +223,9 @@ namespace rdpWrapper {
       p.StartInfo.FileName = app;
       p.StartInfo.WorkingDirectory = workingDir ?? Path.GetDirectoryName(app);
       p.StartInfo.Arguments = arg;
+      p.StartInfo.RedirectStandardOutput = false;
+      p.StartInfo.RedirectStandardInput = false;
+      p.StartInfo.RedirectStandardError = false;
       p.Start();
       return p;
     }
@@ -393,7 +400,66 @@ namespace rdpWrapper {
           }
         }
       }
+    }
 
+    private string GenerateIniFile(bool executeCleanup = false) {
+
+      string iniFile = null;
+      string offsetFinder = null;
+      string zydis = null;
+      try {
+        var workingDir = Path.GetTempPath();
+        iniFile = ExtractResourceFile("rdpwrap.ini", workingDir, true);
+        offsetFinder = ExtractResourceFile("RDPWrapOffsetFinder.exe", workingDir);
+        zydis = ExtractResourceFile("Zydis.dll", workingDir);
+        var p = StartProcess("cmd", $"/c \"{offsetFinder}\" >> rdpwrap.ini & exit", workingDir);
+        p.WaitForExit();
+      }
+      catch (Exception ex) {
+        MessageBox.Show("Failed to generate config: " + ex.Message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+      }
+      finally {
+        if (executeCleanup) {
+          SafeDeleteFile(offsetFinder);
+          SafeDeleteFile(zydis);
+        }
+      }
+      if (File.Exists(iniFile))
+        return iniFile;
+      return null;
+    }
+
+    private string ExtractResourceFile(string resourceName, string path, bool deleteExisting = false) {
+      var fileName = resourceName;//.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
+      var filePath = Path.Combine(path, fileName);
+      if (File.Exists(filePath)) {
+        if (!deleteExisting) {
+          return filePath; //todo: delete
+        }
+        SafeDeleteFile(filePath);
+      }
+      try {
+        var type = this.GetType();
+        var scriptsPath = $"{type.Namespace}.externals.{resourceName}";
+        using (var stream = type.Assembly.GetManifestResourceStream(scriptsPath))
+        using (var fileStream = File.Create(filePath)) {
+          stream.Seek(0, SeekOrigin.Begin);
+          stream.CopyTo(fileStream);
+        }
+        return filePath;
+      }
+      catch (Exception) {
+        return null;
+      }
+    }
+
+    private void SafeDeleteFile(string filePath) {
+      try {
+        if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath)) File.Delete(filePath);
+      }
+      catch (Exception) {
+        //ignore
+      }
     }
 
   }
