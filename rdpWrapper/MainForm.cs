@@ -24,7 +24,9 @@ namespace rdpWrapper {
     public MainForm() {
 
       InitializeComponent();
-      
+
+      Icon = System.Drawing.Icon.ExtractAssociatedIcon(typeof(MainForm).Assembly.Location);
+
       rgNLAOptions.Items.AddRange(new object[] { 
         "GUI Authentication Only", 
         "Default RDP Authentication", 
