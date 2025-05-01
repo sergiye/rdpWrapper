@@ -26,11 +26,13 @@ namespace rdpWrapper {
       this.lRDPPort = new System.Windows.Forms.Label();
       this.cbxHonorLegacy = new System.Windows.Forms.CheckBox();
       this.panActions = new System.Windows.Forms.Panel();
+      this.btnTest = new System.Windows.Forms.Button();
       this.btnRestartService = new System.Windows.Forms.Button();
       this.gbxGeneralSettings = new System.Windows.Forms.GroupBox();
       this.lblShadowMode = new System.Windows.Forms.Label();
       this.lblAuthMode = new System.Windows.Forms.Label();
       this.gbxStatus = new System.Windows.Forms.GroupBox();
+      this.btnGenerate = new System.Windows.Forms.Button();
       this.txtServiceVersion = new System.Windows.Forms.TextBox();
       this.lblSupported = new System.Windows.Forms.Label();
       this.lblListenerStateValue = new System.Windows.Forms.Label();
@@ -40,7 +42,6 @@ namespace rdpWrapper {
       this.lblListenerState = new System.Windows.Forms.Label();
       this.lblServiceState = new System.Windows.Forms.Label();
       this.lblWrapperState = new System.Windows.Forms.Label();
-      this.btnTest = new System.Windows.Forms.Button();
       ((System.ComponentModel.ISupportInitialize)(this.seRDPPort)).BeginInit();
       this.panActions.SuspendLayout();
       this.gbxGeneralSettings.SuspendLayout();
@@ -173,6 +174,15 @@ namespace rdpWrapper {
       this.panActions.Size = new System.Drawing.Size(560, 59);
       this.panActions.TabIndex = 2;
       // 
+      // btnTest
+      // 
+      this.btnTest.Location = new System.Drawing.Point(116, 12);
+      this.btnTest.Name = "btnTest";
+      this.btnTest.Size = new System.Drawing.Size(100, 35);
+      this.btnTest.TabIndex = 1;
+      this.btnTest.Text = "Test";
+      this.btnTest.Click += new System.EventHandler(this.btnTest_Click);
+      // 
       // btnRestartService
       // 
       this.btnRestartService.Location = new System.Drawing.Point(10, 12);
@@ -222,6 +232,7 @@ namespace rdpWrapper {
       // 
       // gbxStatus
       // 
+      this.gbxStatus.Controls.Add(this.btnGenerate);
       this.gbxStatus.Controls.Add(this.txtServiceVersion);
       this.gbxStatus.Controls.Add(this.lblSupported);
       this.gbxStatus.Controls.Add(this.lblListenerStateValue);
@@ -238,6 +249,17 @@ namespace rdpWrapper {
       this.gbxStatus.TabIndex = 0;
       this.gbxStatus.TabStop = false;
       this.gbxStatus.Text = "Diagnostics";
+      // 
+      // btnGenerate
+      // 
+      this.btnGenerate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.btnGenerate.Location = new System.Drawing.Point(448, 92);
+      this.btnGenerate.Name = "btnGenerate";
+      this.btnGenerate.Size = new System.Drawing.Size(100, 29);
+      this.btnGenerate.TabIndex = 9;
+      this.btnGenerate.Text = "Generate";
+      this.btnGenerate.Visible = false;
+      this.btnGenerate.Click += new System.EventHandler(this.btnGenerate_Click);
       // 
       // txtServiceVersion
       // 
@@ -332,15 +354,6 @@ namespace rdpWrapper {
       this.lblWrapperState.TabIndex = 3;
       this.lblWrapperState.Text = "Wrapper state:";
       // 
-      // btnTest
-      // 
-      this.btnTest.Location = new System.Drawing.Point(116, 12);
-      this.btnTest.Name = "btnTest";
-      this.btnTest.Size = new System.Drawing.Size(100, 35);
-      this.btnTest.TabIndex = 1;
-      this.btnTest.Text = "Test";
-      this.btnTest.Click += new System.EventHandler(this.btnTest_Click);
-      // 
       // MainForm
       // 
       this.AcceptButton = this.btnApply;
@@ -393,5 +406,6 @@ namespace rdpWrapper {
     private Label lblWrapperState;
     private TextBox txtServiceVersion;
     private Button btnTest;
+    private Button btnGenerate;
   }
 }

@@ -7,13 +7,13 @@ namespace rdpWrapper {
 
   internal class ServiceHelper {
 
-    private const int SC_MANAGER_CONNECT = 0x0001;
-    private const int SERVICE_QUERY_STATUS = 0x0004;
-    private const int SC_STATUS_PROCESS_INFO = 0;
-    private const int SC_MANAGER_ALL_ACCESS = 0xF003F;
-    private const int SERVICE_STOP = 0x0020;
-    private const int SERVICE_START = 0x0010;
-    private const int SERVICE_ALL_ACCESS = 0xF01FF;
+    internal const int SC_MANAGER_CONNECT = 0x0001;
+    internal const int SERVICE_QUERY_STATUS = 0x0004;
+    internal const int SC_STATUS_PROCESS_INFO = 0;
+    internal const int SC_MANAGER_ALL_ACCESS = 0xF003F;
+    internal const int SERVICE_STOP = 0x0020;
+    internal const int SERVICE_START = 0x0010;
+    internal const int SERVICE_ALL_ACCESS = 0xF01FF;
 
     internal const short SERVICE_CONTINUE_PENDING = 0x00000005; //The service continue is pending.
     internal const short SERVICE_PAUSE_PENDING = 0x00000006; //The service pause is pending.
@@ -37,24 +37,24 @@ namespace rdpWrapper {
     }
 
     [DllImport("advapi32.dll", SetLastError = true)]
-    private static extern IntPtr OpenSCManager(string lpMachineName, string lpDatabaseName, int dwDesiredAccess);
+    internal static extern IntPtr OpenSCManager(string lpMachineName, string lpDatabaseName, int dwDesiredAccess);
 
     [DllImport("advapi32.dll", SetLastError = true)]
-    private static extern IntPtr OpenService(IntPtr hSCManager, string lpServiceName, int dwDesiredAccess);
+    internal static extern IntPtr OpenService(IntPtr hSCManager, string lpServiceName, int dwDesiredAccess);
 
     [DllImport("advapi32.dll", SetLastError = true)]
-    private static extern bool CloseServiceHandle(IntPtr hSCObject);
+    internal static extern bool CloseServiceHandle(IntPtr hSCObject);
 
     [DllImport("advapi32.dll", SetLastError = true)]
-    private static extern bool ControlService(IntPtr hService, int dwControl, out SERVICE_STATUS_PROCESS lpServiceStatus);
+    internal static extern bool ControlService(IntPtr hService, int dwControl, out SERVICE_STATUS_PROCESS lpServiceStatus);
 
     [DllImport("advapi32.dll", SetLastError = true)]
-    private static extern bool QueryServiceStatusEx(IntPtr hService, int InfoLevel, IntPtr lpBuffer, int cbBufSize, out int pcbBytesNeeded);
+    internal static extern bool QueryServiceStatusEx(IntPtr hService, int InfoLevel, IntPtr lpBuffer, int cbBufSize, out int pcbBytesNeeded);
 
     [DllImport("advapi32.dll", SetLastError = true)]
-    private static extern bool StartService(IntPtr hService, int dwNumServiceArgs, string[] lpServiceArgVectors);
+    internal static extern bool StartService(IntPtr hService, int dwNumServiceArgs, string[] lpServiceArgVectors);
 
-    private static bool WaitForServiceStatus(IntPtr service, int desiredStatus, TimeSpan timeout) {
+    internal static bool WaitForServiceStatus(IntPtr service, int desiredStatus, TimeSpan timeout) {
 
       var start = DateTime.Now;
       var buf = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(SERVICE_STATUS_PROCESS)));
@@ -77,7 +77,7 @@ namespace rdpWrapper {
       return false;
     }
 
-    public static bool RestartServiceNative(string svcName = "TermService") {
+    internal static bool RestartServiceNative(string svcName = "TermService") {
       IntPtr scm = OpenSCManager(null, null, SC_MANAGER_ALL_ACCESS);
       if (scm == IntPtr.Zero)
         return false;
@@ -90,7 +90,7 @@ namespace rdpWrapper {
 
       try {
         // Stop the service
-        ControlService(service, 1 /* SERVICE_CONTROL_STOP */, out SERVICE_STATUS_PROCESS status);
+        ControlService(service, SERVICE_STOP, out SERVICE_STATUS_PROCESS status);
 
         // Wait until it's stopped
         if (!WaitForServiceStatus(service, SERVICE_STOPPED, TimeSpan.FromSeconds(10)))
@@ -105,6 +105,22 @@ namespace rdpWrapper {
       finally {
         CloseServiceHandle(service);
         CloseServiceHandle(scm);
+      }
+    }
+
+    internal static void StopService(string serviceName, TimeSpan timeout) {
+      ServiceController service = new(serviceName);
+      if (service.Status != ServiceControllerStatus.Stopped) {
+        service.Stop();
+        service.WaitForStatus(ServiceControllerStatus.Stopped, timeout);
+      }
+    }
+
+    internal static void StartService(string serviceName, TimeSpan timeout) {
+      ServiceController service = new(serviceName);
+      if (service.Status != ServiceControllerStatus.Running) {
+        service.Start();
+        service.WaitForStatus(ServiceControllerStatus.Running, timeout);
       }
     }
 

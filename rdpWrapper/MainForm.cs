@@ -401,6 +401,7 @@ namespace rdpWrapper {
           versionInfo.FileMajorPart == 6 && versionInfo.FileMinorPart == 1) {
         lblSupported.Text = "[supported partially]";
         lblSupported.ForeColor = Color.Olive;
+        btnGenerate.Visible = false;
       }
       else {
         var lastModified = File.GetLastWriteTime(wrapperIniLastPath);
@@ -412,11 +413,13 @@ namespace rdpWrapper {
         if (wrapperIniLastSupported) {
           lblSupported.Text = "[fully supported]";
           lblSupported.ForeColor = Color.Green;
+          btnGenerate.Visible = false;
           return;
         }
       }
       lblSupported.Text = "[not supported]";
       lblSupported.ForeColor = Color.Red;
+      btnGenerate.Visible = true;
     }
 
     private string GenerateIniFile(bool executeCleanup = false) {
@@ -481,6 +484,20 @@ namespace rdpWrapper {
 
     private void btnTest_Click(object sender, EventArgs e) {
       Process.Start("mstsc.exe", $"/v:127.0.0.2:{oldPort}");
+    }
+
+    private void btnGenerate_Click(object sender, EventArgs e) {
+      var newIniFile = GenerateIniFile(true);
+      if (newIniFile == null) return;
+      try {
+        ServiceHelper.StopService("TermService", TimeSpan.FromSeconds(10));
+        SafeDeleteFile(wrapperIniLastPath);
+        File.Move(newIniFile, wrapperIniLastPath);
+        ServiceHelper.StartService("TermService", TimeSpan.FromSeconds(10));
+      }
+      catch (Exception ex) {
+        MessageBox.Show("Failed to update config: " + ex.Message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+      }
     }
   }
 }
