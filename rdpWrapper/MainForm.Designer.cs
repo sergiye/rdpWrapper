@@ -40,6 +40,7 @@ namespace rdpWrapper {
       this.lblListenerState = new System.Windows.Forms.Label();
       this.lblServiceState = new System.Windows.Forms.Label();
       this.lblWrapperState = new System.Windows.Forms.Label();
+      this.btnTest = new System.Windows.Forms.Button();
       ((System.ComponentModel.ISupportInitialize)(this.seRDPPort)).BeginInit();
       this.panActions.SuspendLayout();
       this.gbxGeneralSettings.SuspendLayout();
@@ -49,6 +50,7 @@ namespace rdpWrapper {
       // btnClose
       // 
       this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.btnClose.DialogResult = System.Windows.Forms.DialogResult.Cancel;
       this.btnClose.Location = new System.Drawing.Point(448, 12);
       this.btnClose.Name = "btnClose";
       this.btnClose.Size = new System.Drawing.Size(100, 35);
@@ -161,6 +163,7 @@ namespace rdpWrapper {
       // 
       // panActions
       // 
+      this.panActions.Controls.Add(this.btnTest);
       this.panActions.Controls.Add(this.btnRestartService);
       this.panActions.Controls.Add(this.btnClose);
       this.panActions.Controls.Add(this.btnApply);
@@ -174,9 +177,9 @@ namespace rdpWrapper {
       // 
       this.btnRestartService.Location = new System.Drawing.Point(10, 12);
       this.btnRestartService.Name = "btnRestartService";
-      this.btnRestartService.Size = new System.Drawing.Size(137, 35);
+      this.btnRestartService.Size = new System.Drawing.Size(100, 35);
       this.btnRestartService.TabIndex = 0;
-      this.btnRestartService.Text = "Restart service";
+      this.btnRestartService.Text = "Restart";
       this.btnRestartService.Click += new System.EventHandler(this.btnRestartService_Click);
       // 
       // gbxGeneralSettings
@@ -329,6 +332,15 @@ namespace rdpWrapper {
       this.lblWrapperState.TabIndex = 3;
       this.lblWrapperState.Text = "Wrapper state:";
       // 
+      // btnTest
+      // 
+      this.btnTest.Location = new System.Drawing.Point(116, 12);
+      this.btnTest.Name = "btnTest";
+      this.btnTest.Size = new System.Drawing.Size(100, 35);
+      this.btnTest.TabIndex = 1;
+      this.btnTest.Text = "Test";
+      this.btnTest.Click += new System.EventHandler(this.btnTest_Click);
+      // 
       // MainForm
       // 
       this.AcceptButton = this.btnApply;
@@ -380,5 +392,6 @@ namespace rdpWrapper {
     private Label lblServiceState;
     private Label lblWrapperState;
     private TextBox txtServiceVersion;
+    private Button btnTest;
   }
 }

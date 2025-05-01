@@ -479,5 +479,8 @@ namespace rdpWrapper {
       }
     }
 
+    private void btnTest_Click(object sender, EventArgs e) {
+      Process.Start("mstsc.exe", $"/v:127.0.0.2:{oldPort}");
+    }
   }
 }
