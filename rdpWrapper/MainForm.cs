@@ -2,13 +2,14 @@
 using sergiye.Common;
 using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace rdpWrapper {
 
-  public partial class MainForm : Form {
+  internal partial class MainForm : Form {
 
     private const int MF_SEPARATOR = 0x00000800;
     private const int MF_BY_POSITION = 0x400;
@@ -17,6 +18,7 @@ namespace rdpWrapper {
     private const int MF_SYS_MENU_ABOUT_ID = 1001;
 
     private const string REG_KEY = @"SYSTEM\CurrentControlSet\Control\Terminal Server";
+    private const string REG_TERMSERVICE_KEY = @"SYSTEM\CurrentControlSet\Services\TermService";
     private const string REG_RDP_KEY = @"SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp";
     private const string REG_WINLOGON_KEY = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System";
     private const string REG_TS_KEY = @"SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services";
@@ -29,15 +31,18 @@ namespace rdpWrapper {
     private const string VALUE_NLA = "UserAuthentication";
     private const string VALUE_SECURITY = "SecurityLayer";
     private const string VALUE_SHADOW = "Shadow";
+    
+    private const string RDP_WRAP_INI_NAME = "rdpwrap.ini";
 
     private int oldPort;
+    private readonly string termSrvFile;
     private readonly Timer refreshTimer;
 
     public MainForm() {
 
       InitializeComponent();
 
-      Icon = System.Drawing.Icon.ExtractAssociatedIcon(typeof(MainForm).Assembly.Location);
+      Icon = Icon.ExtractAssociatedIcon(typeof(MainForm).Assembly.Location);
       Text = $"{Updater.ApplicationTitle} v{Updater.CurrentVersion} {(Environment.Is64BitProcess ? "x64" : "x86")}";
       StartPosition = FormStartPosition.CenterScreen;
 
@@ -60,6 +65,8 @@ namespace rdpWrapper {
       InsertMenu(menuHandle, 7, MF_BY_POSITION, MF_SYS_MENU_ABOUT_ID, "&About…");
 
       Load += mainFormLoad;
+
+      termSrvFile = Path.Combine(Environment.SystemDirectory, "termsrv.dll");
 
       refreshTimer = new Timer();
       refreshTimer.Tick += timerTick;
@@ -130,6 +137,9 @@ namespace rdpWrapper {
         using (var key = Registry.LocalMachine.OpenSubKey(REG_WINLOGON_KEY)) {
           cbDontDisplayLastUser.Checked = Convert.ToInt32(key.GetValue(VALUE_DONTDISPLAYLASTUSERNAME, 0)) != 0;
         }
+
+        timerTick(null, EventArgs.Empty);
+        refreshTimer.Enabled = true;
       }
       catch (Exception ex) {
         MessageBox.Show("Error loading settings: " + ex.Message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -201,7 +211,7 @@ namespace rdpWrapper {
       btnApply.Enabled = true;
     }
 
-    public static Process StartProcess(string app, string arg, string workingDir = null) {
+    private static Process StartProcess(string app, string arg, string workingDir = null) {
 
       var p = new Process();
       p.StartInfo.UseShellExecute = true;
@@ -213,8 +223,178 @@ namespace rdpWrapper {
       return p;
     }
 
-    private void timerTick(object sender, EventArgs e) {
-      // Placeholder for timer functionality
+    private void btnRestartService_Click(object sender, EventArgs e) {
+      try {
+        //todo: async
+
+        //if (ServiceHelper.RestartServiceNative()) {
+        //  MessageBox.Show("Service restarted.", Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //}
+        //else {
+        //  MessageBox.Show("Failed to restart TermService.", Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //}
+
+        ServiceHelper.RestartService("TermService", 10000);
+        MessageBox.Show("TermService restarted successfully", Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+      }
+      catch (Exception ex) {
+        MessageBox.Show("Error restarting service: " + ex.Message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+      }
     }
+
+    private static short IsWrapperInstalled(out string wrapperPath) {
+      wrapperPath = string.Empty;
+      try {
+        using (var serviceKey = Registry.LocalMachine.OpenSubKey(REG_TERMSERVICE_KEY)) {
+          if (serviceKey == null)
+            return -1;
+          var termServiceHost = serviceKey.GetValue("ImagePath") as string;
+          if (string.IsNullOrWhiteSpace(termServiceHost) || !termServiceHost.ToLower().Contains("svchost.exe"))
+            return 2;
+        }
+
+        string termServicePath;
+        using (var paramKey = Registry.LocalMachine.OpenSubKey(REG_TERMSERVICE_KEY + "\\Parameters")) {
+          if (paramKey == null)
+            return -1;
+
+          termServicePath = paramKey.GetValue("ServiceDll") as string;
+          if (string.IsNullOrWhiteSpace(termServicePath))
+            return -1;
+        }
+
+        string lowerPath = termServicePath.ToLower();
+        if (!lowerPath.Contains("termsrv.dll") && !lowerPath.Contains("rdpwrap.dll"))
+          return 2;
+
+        if (lowerPath.Contains("rdpwrap.dll")) {
+          wrapperPath = termServicePath;
+          return 1;
+        }
+
+        return 0;
+      }
+      catch {
+        return -1;
+      }
+    }
+
+    private string GetVersionString(FileVersionInfo versionInfo) {
+      return versionInfo.FileMajorPart + "." + versionInfo.FileMinorPart + "." + versionInfo.FileBuildPart + "." + versionInfo.FilePrivatePart;
+    }
+
+    private void timerTick(object sender, EventArgs e) {
+
+      var checkSupported = false;
+      string wrapperIniPath = null;
+      var wrapperInstalled = IsWrapperInstalled(out var wrapperPath);
+      switch (wrapperInstalled) {
+        case -1:
+          lblWrapperStateValue.Text = "Unknown";
+          lblWrapperStateValue.ForeColor = Color.Gray;
+          break;
+        case 0:
+          lblWrapperStateValue.Text = "Not installed";
+          lblWrapperStateValue.ForeColor = Color.Gray;
+          break;
+        case 1:
+          lblWrapperStateValue.Text = "Installed";
+          lblWrapperStateValue.ForeColor = Color.Green;
+          wrapperIniPath = Path.Combine(Path.GetDirectoryName(wrapperPath), RDP_WRAP_INI_NAME);
+          checkSupported = File.Exists(wrapperIniPath);
+          break;
+        case 2:
+          lblWrapperStateValue.Text = "3rd-party";
+          lblWrapperStateValue.ForeColor = Color.Red;
+          break;
+      }
+
+      var termServiceState = ServiceHelper.GetServiceState();
+      switch (termServiceState) {
+        case -1:
+        case 0:
+          lblServiceStateValue.Text = "Unknown";
+          lblServiceStateValue.ForeColor = ForeColor;
+          break;
+        case ServiceHelper.SERVICE_STOPPED:
+          lblServiceStateValue.Text = "Stopped";
+          lblServiceStateValue.ForeColor = Color.Red;
+          break;
+        case ServiceHelper.SERVICE_START_PENDING:
+          lblServiceStateValue.Text = "Starting..";
+          lblServiceStateValue.ForeColor = ForeColor;
+          break;
+        case ServiceHelper.SERVICE_STOP_PENDING:
+          lblServiceStateValue.Text = "Stopping...";
+          lblServiceStateValue.ForeColor = ForeColor;
+          break;
+        case ServiceHelper.SERVICE_RUNNING:
+          lblServiceStateValue.Text = "Running";
+          lblServiceStateValue.ForeColor = Color.Green;
+          break;
+        case ServiceHelper.SERVICE_CONTINUE_PENDING:
+          lblServiceStateValue.Text = "Resuming...";
+          lblServiceStateValue.ForeColor = ForeColor;
+          break;
+        case ServiceHelper.SERVICE_PAUSE_PENDING:
+          lblServiceStateValue.Text = "Suspending...";
+          lblServiceStateValue.ForeColor = ForeColor;
+          break;
+        case ServiceHelper.SERVICE_PAUSED:
+          lblServiceStateValue.Text = "Suspended";
+          lblServiceStateValue.ForeColor = ForeColor;
+          break;
+      }
+
+      if (WinStationHelper.IsListenerWorking()){
+        lblListenerStateValue.Text = "Listening";
+        lblListenerStateValue.ForeColor = Color.Green;
+      }
+      else {
+        lblListenerStateValue.Text = "Not listening";
+        lblListenerStateValue.ForeColor = Color.Red;
+      }
+
+      if (string.IsNullOrEmpty(wrapperPath) || !File.Exists(wrapperPath)) {
+        lblWrapperVersion.Text = "N/A";
+        lblWrapperVersion.ForeColor = Color.Red;
+      }
+      else {
+        var versionInfo = FileVersionInfo.GetVersionInfo(wrapperPath);
+        lblWrapperVersion.Text = "ver. " + GetVersionString(versionInfo);
+        lblWrapperVersion.ForeColor = ForeColor;
+      }
+
+      if (!File.Exists(termSrvFile)) {
+        txtServiceVersion.Text = "N/A";
+        txtServiceVersion.ForeColor = Color.Red;
+      }
+      else {
+        var versionInfo = FileVersionInfo.GetVersionInfo(termSrvFile);
+        txtServiceVersion.Text = "ver. " + GetVersionString(versionInfo);
+        txtServiceVersion.ForeColor = ForeColor;
+
+        lblSupported.Visible = checkSupported;
+        if (checkSupported) {
+          var iniContent = File.ReadAllText(wrapperIniPath); //todo: optimize
+
+          if (versionInfo.FileMajorPart == 6 && versionInfo.FileMinorPart == 0 ||
+              versionInfo.FileMajorPart == 6 && versionInfo.FileMinorPart == 1) {
+            lblSupported.Text = "[supported partially]";
+            lblSupported.ForeColor = Color.Olive;
+          }
+          else if (iniContent.Contains("[" + GetVersionString(versionInfo) + "]")) {
+            lblSupported.Text = "[fully supported]";
+            lblSupported.ForeColor = Color.Green;
+          }
+          else {
+            lblSupported.Text = "[not supported]";
+            lblSupported.ForeColor = Color.Red;
+          }
+        }
+      }
+
+    }
+
   }
 }

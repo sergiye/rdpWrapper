@@ -35,6 +35,7 @@
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Web.Extensions" />
   </ItemGroup>
 </Project>
