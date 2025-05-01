@@ -1,0 +1,12 @@
+﻿*.suo
+*.user
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+.vs/
+*.DotSettings.user
+.idea/
