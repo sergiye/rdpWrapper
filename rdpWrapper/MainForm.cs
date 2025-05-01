@@ -35,6 +35,10 @@ namespace rdpWrapper {
     private const string RDP_WRAP_INI_NAME = "rdpwrap.ini";
 
     private int oldPort;
+    private string wrapperIniLastPath = null;
+    private DateTime wrapperIniLastChecked = DateTime.MinValue;
+    private bool wrapperIniLastSupported = false;
+
     private readonly string termSrvFile;
     private readonly Timer refreshTimer;
 
@@ -293,7 +297,6 @@ namespace rdpWrapper {
     private void timerTick(object sender, EventArgs e) {
 
       var checkSupported = false;
-      string wrapperIniPath = null;
       var wrapperInstalled = IsWrapperInstalled(out var wrapperPath);
       switch (wrapperInstalled) {
         case -1:
@@ -307,8 +310,12 @@ namespace rdpWrapper {
         case 1:
           lblWrapperStateValue.Text = "Installed";
           lblWrapperStateValue.ForeColor = Color.Green;
-          wrapperIniPath = Path.Combine(Path.GetDirectoryName(wrapperPath), RDP_WRAP_INI_NAME);
+          var wrapperIniPath = Path.Combine(Path.GetDirectoryName(wrapperPath), RDP_WRAP_INI_NAME);
           checkSupported = File.Exists(wrapperIniPath);
+          if (wrapperIniPath != wrapperIniLastPath) {
+            wrapperIniLastPath = wrapperIniPath;
+            wrapperIniLastChecked = DateTime.MinValue;
+          }
           break;
         case 2:
           lblWrapperStateValue.Text = "3rd-party";
@@ -383,23 +390,33 @@ namespace rdpWrapper {
 
         lblSupported.Visible = checkSupported;
         if (checkSupported) {
-          var iniContent = File.ReadAllText(wrapperIniPath); //todo: optimize
-
-          if (versionInfo.FileMajorPart == 6 && versionInfo.FileMinorPart == 0 ||
-              versionInfo.FileMajorPart == 6 && versionInfo.FileMinorPart == 1) {
-            lblSupported.Text = "[supported partially]";
-            lblSupported.ForeColor = Color.Olive;
-          }
-          else if (iniContent.Contains("[" + GetVersionString(versionInfo) + "]")) {
-            lblSupported.Text = "[fully supported]";
-            lblSupported.ForeColor = Color.Green;
-          }
-          else {
-            lblSupported.Text = "[not supported]";
-            lblSupported.ForeColor = Color.Red;
-          }
+          UpdateSupportedState(versionInfo);
         }
       }
+    }
+
+    private void UpdateSupportedState(FileVersionInfo versionInfo) {
+
+      if (versionInfo.FileMajorPart == 6 && versionInfo.FileMinorPart == 0 ||
+          versionInfo.FileMajorPart == 6 && versionInfo.FileMinorPart == 1) {
+        lblSupported.Text = "[supported partially]";
+        lblSupported.ForeColor = Color.Olive;
+      }
+      else {
+        var lastModified = File.GetLastWriteTime(wrapperIniLastPath);
+        if (lastModified > wrapperIniLastChecked) {
+          var iniContent = File.ReadAllText(wrapperIniLastPath);
+          wrapperIniLastSupported = iniContent.Contains("[" + GetVersionString(versionInfo) + "]");
+          wrapperIniLastChecked = lastModified;
+        }
+        if (wrapperIniLastSupported) {
+          lblSupported.Text = "[fully supported]";
+          lblSupported.ForeColor = Color.Green;
+          return;
+        }
+      }
+      lblSupported.Text = "[not supported]";
+      lblSupported.ForeColor = Color.Red;
     }
 
     private string GenerateIniFile(bool executeCleanup = false) {
