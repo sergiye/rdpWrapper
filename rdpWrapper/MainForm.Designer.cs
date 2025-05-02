@@ -1,5 +1,4 @@
-﻿using System.Drawing;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 
 namespace rdpWrapper {
   partial class MainForm {
@@ -14,6 +13,10 @@ namespace rdpWrapper {
 
     #region Windows Form Designer generated code
 
+    /// <summary>
+    /// Required method for Designer support - do not modify
+    /// the contents of this method with the code editor.
+    /// </summary>
     private void InitializeComponent() {
       this.btnClose = new System.Windows.Forms.Button();
       this.btnApply = new System.Windows.Forms.Button();
@@ -42,7 +45,8 @@ namespace rdpWrapper {
       this.lblListenerState = new System.Windows.Forms.Label();
       this.lblServiceState = new System.Windows.Forms.Label();
       this.lblWrapperState = new System.Windows.Forms.Label();
-      ((System.ComponentModel.ISupportInitialize)(this.seRDPPort)).BeginInit();
+      this.txtLog = new rdpWrapper.SimplTextBox();
+      ((System.ComponentModel.ISupportInitialize) (this.seRDPPort)).BeginInit();
       this.panActions.SuspendLayout();
       this.gbxGeneralSettings.SuspendLayout();
       this.gbxStatus.SuspendLayout();
@@ -50,21 +54,21 @@ namespace rdpWrapper {
       // 
       // btnClose
       // 
-      this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles) ((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
       this.btnClose.DialogResult = System.Windows.Forms.DialogResult.Cancel;
       this.btnClose.Location = new System.Drawing.Point(448, 12);
       this.btnClose.Name = "btnClose";
-      this.btnClose.Size = new System.Drawing.Size(100, 35);
+      this.btnClose.Size = new System.Drawing.Size(100, 34);
       this.btnClose.TabIndex = 2;
       this.btnClose.Text = "Close";
       this.btnClose.Click += new System.EventHandler(this.BtnCloseClick);
       // 
       // btnApply
       // 
-      this.btnApply.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.btnApply.Anchor = ((System.Windows.Forms.AnchorStyles) ((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
       this.btnApply.Location = new System.Drawing.Point(332, 12);
       this.btnApply.Name = "btnApply";
-      this.btnApply.Size = new System.Drawing.Size(100, 35);
+      this.btnApply.Size = new System.Drawing.Size(100, 34);
       this.btnApply.TabIndex = 1;
       this.btnApply.Text = "Apply";
       this.btnApply.Click += new System.EventHandler(this.BtnApplyClick);
@@ -75,7 +79,7 @@ namespace rdpWrapper {
       this.cbxSingleSessionPerUser.Location = new System.Drawing.Point(6, 87);
       this.cbxSingleSessionPerUser.Name = "cbxSingleSessionPerUser";
       this.cbxSingleSessionPerUser.Size = new System.Drawing.Size(199, 24);
-      this.cbxSingleSessionPerUser.TabIndex = 3;
+      this.cbxSingleSessionPerUser.TabIndex = 1;
       this.cbxSingleSessionPerUser.Text = "Single session per user";
       this.cbxSingleSessionPerUser.CheckedChanged += new System.EventHandler(this.OnChanged);
       // 
@@ -95,16 +99,15 @@ namespace rdpWrapper {
       this.cbDontDisplayLastUser.Location = new System.Drawing.Point(6, 117);
       this.cbDontDisplayLastUser.Name = "cbDontDisplayLastUser";
       this.cbDontDisplayLastUser.Size = new System.Drawing.Size(239, 24);
-      this.cbDontDisplayLastUser.TabIndex = 4;
+      this.cbDontDisplayLastUser.TabIndex = 2;
       this.cbDontDisplayLastUser.Text = "Do not display last username";
       this.cbDontDisplayLastUser.CheckedChanged += new System.EventHandler(this.OnChanged);
       // 
       // rgNLAOptions
       // 
-      this.rgNLAOptions.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+      this.rgNLAOptions.Anchor = ((System.Windows.Forms.AnchorStyles) (((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
       this.rgNLAOptions.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-      this.rgNLAOptions.Location = new System.Drawing.Point(274, 85);
+      this.rgNLAOptions.Location = new System.Drawing.Point(274, 86);
       this.rgNLAOptions.Name = "rgNLAOptions";
       this.rgNLAOptions.Size = new System.Drawing.Size(274, 28);
       this.rgNLAOptions.TabIndex = 7;
@@ -112,8 +115,7 @@ namespace rdpWrapper {
       // 
       // rgShadowOptions
       // 
-      this.rgShadowOptions.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+      this.rgShadowOptions.Anchor = ((System.Windows.Forms.AnchorStyles) (((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
       this.rgShadowOptions.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
       this.rgShadowOptions.Location = new System.Drawing.Point(274, 146);
       this.rgShadowOptions.Name = "rgShadowOptions";
@@ -123,43 +125,31 @@ namespace rdpWrapper {
       // 
       // seRDPPort
       // 
-      this.seRDPPort.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.seRDPPort.Anchor = ((System.Windows.Forms.AnchorStyles) ((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
       this.seRDPPort.Location = new System.Drawing.Point(428, 32);
-      this.seRDPPort.Maximum = new decimal(new int[] {
-            65535,
-            0,
-            0,
-            0});
-      this.seRDPPort.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
+      this.seRDPPort.Maximum = new decimal(new int[] {65535, 0, 0, 0});
+      this.seRDPPort.Minimum = new decimal(new int[] {1, 0, 0, 0});
       this.seRDPPort.Name = "seRDPPort";
       this.seRDPPort.Size = new System.Drawing.Size(120, 26);
-      this.seRDPPort.TabIndex = 2;
-      this.seRDPPort.Value = new decimal(new int[] {
-            3389,
-            0,
-            0,
-            0});
+      this.seRDPPort.TabIndex = 5;
+      this.seRDPPort.Value = new decimal(new int[] {3389, 0, 0, 0});
       this.seRDPPort.ValueChanged += new System.EventHandler(this.OnChanged);
       // 
       // lRDPPort
       // 
       this.lRDPPort.Location = new System.Drawing.Point(274, 32);
       this.lRDPPort.Name = "lRDPPort";
-      this.lRDPPort.Size = new System.Drawing.Size(100, 23);
-      this.lRDPPort.TabIndex = 1;
+      this.lRDPPort.Size = new System.Drawing.Size(100, 22);
+      this.lRDPPort.TabIndex = 4;
       this.lRDPPort.Text = "RDP Port:";
       // 
       // cbxHonorLegacy
       // 
       this.cbxHonorLegacy.AutoSize = true;
-      this.cbxHonorLegacy.Location = new System.Drawing.Point(6, 149);
+      this.cbxHonorLegacy.Location = new System.Drawing.Point(6, 148);
       this.cbxHonorLegacy.Name = "cbxHonorLegacy";
       this.cbxHonorLegacy.Size = new System.Drawing.Size(253, 24);
-      this.cbxHonorLegacy.TabIndex = 5;
+      this.cbxHonorLegacy.TabIndex = 3;
       this.cbxHonorLegacy.Text = "Allow to start custom programs";
       // 
       // panActions
@@ -169,16 +159,16 @@ namespace rdpWrapper {
       this.panActions.Controls.Add(this.btnClose);
       this.panActions.Controls.Add(this.btnApply);
       this.panActions.Dock = System.Windows.Forms.DockStyle.Bottom;
-      this.panActions.Location = new System.Drawing.Point(0, 319);
+      this.panActions.Location = new System.Drawing.Point(0, 385);
       this.panActions.Name = "panActions";
-      this.panActions.Size = new System.Drawing.Size(560, 59);
-      this.panActions.TabIndex = 2;
+      this.panActions.Size = new System.Drawing.Size(560, 58);
+      this.panActions.TabIndex = 3;
       // 
       // btnTest
       // 
       this.btnTest.Location = new System.Drawing.Point(116, 12);
       this.btnTest.Name = "btnTest";
-      this.btnTest.Size = new System.Drawing.Size(100, 35);
+      this.btnTest.Size = new System.Drawing.Size(100, 34);
       this.btnTest.TabIndex = 1;
       this.btnTest.Text = "Test";
       this.btnTest.Click += new System.EventHandler(this.btnTest_Click);
@@ -187,7 +177,7 @@ namespace rdpWrapper {
       // 
       this.btnRestartService.Location = new System.Drawing.Point(10, 12);
       this.btnRestartService.Name = "btnRestartService";
-      this.btnRestartService.Size = new System.Drawing.Size(100, 35);
+      this.btnRestartService.Size = new System.Drawing.Size(100, 34);
       this.btnRestartService.TabIndex = 0;
       this.btnRestartService.Text = "Restart";
       this.btnRestartService.Click += new System.EventHandler(this.btnRestartService_Click);
@@ -204,11 +194,11 @@ namespace rdpWrapper {
       this.gbxGeneralSettings.Controls.Add(this.seRDPPort);
       this.gbxGeneralSettings.Controls.Add(this.cbxAllowTSConnections);
       this.gbxGeneralSettings.Controls.Add(this.cbxSingleSessionPerUser);
-      this.gbxGeneralSettings.Dock = System.Windows.Forms.DockStyle.Bottom;
-      this.gbxGeneralSettings.Location = new System.Drawing.Point(0, 130);
+      this.gbxGeneralSettings.Dock = System.Windows.Forms.DockStyle.Top;
+      this.gbxGeneralSettings.Location = new System.Drawing.Point(0, 129);
       this.gbxGeneralSettings.Name = "gbxGeneralSettings";
       this.gbxGeneralSettings.Size = new System.Drawing.Size(560, 189);
-      this.gbxGeneralSettings.TabIndex = 1;
+      this.gbxGeneralSettings.TabIndex = 2;
       this.gbxGeneralSettings.TabStop = false;
       this.gbxGeneralSettings.Text = "General settings";
       // 
@@ -242,20 +232,20 @@ namespace rdpWrapper {
       this.gbxStatus.Controls.Add(this.lblListenerState);
       this.gbxStatus.Controls.Add(this.lblServiceState);
       this.gbxStatus.Controls.Add(this.lblWrapperState);
-      this.gbxStatus.Dock = System.Windows.Forms.DockStyle.Fill;
+      this.gbxStatus.Dock = System.Windows.Forms.DockStyle.Top;
       this.gbxStatus.Location = new System.Drawing.Point(0, 0);
       this.gbxStatus.Name = "gbxStatus";
-      this.gbxStatus.Size = new System.Drawing.Size(560, 130);
-      this.gbxStatus.TabIndex = 0;
+      this.gbxStatus.Size = new System.Drawing.Size(560, 129);
+      this.gbxStatus.TabIndex = 1;
       this.gbxStatus.TabStop = false;
       this.gbxStatus.Text = "Diagnostics";
       // 
       // btnGenerate
       // 
-      this.btnGenerate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-      this.btnGenerate.Location = new System.Drawing.Point(448, 92);
+      this.btnGenerate.Anchor = ((System.Windows.Forms.AnchorStyles) ((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.btnGenerate.Location = new System.Drawing.Point(447, 92);
       this.btnGenerate.Name = "btnGenerate";
-      this.btnGenerate.Size = new System.Drawing.Size(100, 29);
+      this.btnGenerate.Size = new System.Drawing.Size(100, 28);
       this.btnGenerate.TabIndex = 9;
       this.btnGenerate.Text = "Generate";
       this.btnGenerate.Visible = false;
@@ -263,20 +253,19 @@ namespace rdpWrapper {
       // 
       // txtServiceVersion
       // 
-      this.txtServiceVersion.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+      this.txtServiceVersion.Anchor = ((System.Windows.Forms.AnchorStyles) (((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
       this.txtServiceVersion.BorderStyle = System.Windows.Forms.BorderStyle.None;
-      this.txtServiceVersion.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-      this.txtServiceVersion.Location = new System.Drawing.Point(274, 31);
+      this.txtServiceVersion.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte) (204)));
+      this.txtServiceVersion.Location = new System.Drawing.Point(274, 32);
       this.txtServiceVersion.Name = "txtServiceVersion";
       this.txtServiceVersion.ReadOnly = true;
-      this.txtServiceVersion.Size = new System.Drawing.Size(274, 19);
+      this.txtServiceVersion.Size = new System.Drawing.Size(273, 19);
       this.txtServiceVersion.TabIndex = 2;
       // 
       // lblSupported
       // 
       this.lblSupported.AutoSize = true;
-      this.lblSupported.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+      this.lblSupported.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte) (204)));
       this.lblSupported.ForeColor = System.Drawing.Color.Red;
       this.lblSupported.Location = new System.Drawing.Point(270, 96);
       this.lblSupported.Name = "lblSupported";
@@ -287,7 +276,7 @@ namespace rdpWrapper {
       // lblListenerStateValue
       // 
       this.lblListenerStateValue.AutoSize = true;
-      this.lblListenerStateValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+      this.lblListenerStateValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte) (204)));
       this.lblListenerStateValue.ForeColor = System.Drawing.Color.Red;
       this.lblListenerStateValue.Location = new System.Drawing.Point(150, 96);
       this.lblListenerStateValue.Name = "lblListenerStateValue";
@@ -298,9 +287,9 @@ namespace rdpWrapper {
       // lblServiceStateValue
       // 
       this.lblServiceStateValue.AutoSize = true;
-      this.lblServiceStateValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+      this.lblServiceStateValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte) (204)));
       this.lblServiceStateValue.ForeColor = System.Drawing.Color.Red;
-      this.lblServiceStateValue.Location = new System.Drawing.Point(150, 31);
+      this.lblServiceStateValue.Location = new System.Drawing.Point(150, 32);
       this.lblServiceStateValue.Name = "lblServiceStateValue";
       this.lblServiceStateValue.Size = new System.Drawing.Size(83, 20);
       this.lblServiceStateValue.TabIndex = 1;
@@ -309,7 +298,7 @@ namespace rdpWrapper {
       // lblWrapperVersion
       // 
       this.lblWrapperVersion.AutoSize = true;
-      this.lblWrapperVersion.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+      this.lblWrapperVersion.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte) (204)));
       this.lblWrapperVersion.Location = new System.Drawing.Point(270, 63);
       this.lblWrapperVersion.Name = "lblWrapperVersion";
       this.lblWrapperVersion.Size = new System.Drawing.Size(64, 20);
@@ -319,7 +308,7 @@ namespace rdpWrapper {
       // lblWrapperStateValue
       // 
       this.lblWrapperStateValue.AutoSize = true;
-      this.lblWrapperStateValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+      this.lblWrapperStateValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte) (204)));
       this.lblWrapperStateValue.ForeColor = System.Drawing.Color.Red;
       this.lblWrapperStateValue.Location = new System.Drawing.Point(150, 63);
       this.lblWrapperStateValue.Name = "lblWrapperStateValue";
@@ -339,7 +328,7 @@ namespace rdpWrapper {
       // lblServiceState
       // 
       this.lblServiceState.AutoSize = true;
-      this.lblServiceState.Location = new System.Drawing.Point(12, 31);
+      this.lblServiceState.Location = new System.Drawing.Point(12, 32);
       this.lblServiceState.Name = "lblServiceState";
       this.lblServiceState.Size = new System.Drawing.Size(105, 20);
       this.lblServiceState.TabIndex = 0;
@@ -354,28 +343,41 @@ namespace rdpWrapper {
       this.lblWrapperState.TabIndex = 3;
       this.lblWrapperState.Text = "Wrapper state:";
       // 
+      // txtLog
+      // 
+      this.txtLog.Dock = System.Windows.Forms.DockStyle.Fill;
+      this.txtLog.Location = new System.Drawing.Point(0, 318);
+      this.txtLog.Name = "txtLog";
+      this.txtLog.ReadOnly = true;
+      this.txtLog.Size = new System.Drawing.Size(560, 67);
+      this.txtLog.TabIndex = 0;
+      this.txtLog.Text = "";
+      // 
       // MainForm
       // 
       this.AcceptButton = this.btnApply;
+      this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
+      this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
       this.CancelButton = this.btnClose;
-      this.ClientSize = new System.Drawing.Size(560, 378);
-      this.Controls.Add(this.gbxStatus);
+      this.ClientSize = new System.Drawing.Size(560, 443);
+      this.Controls.Add(this.txtLog);
       this.Controls.Add(this.gbxGeneralSettings);
+      this.Controls.Add(this.gbxStatus);
       this.Controls.Add(this.panActions);
       this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
       this.MaximizeBox = false;
       this.MinimizeBox = false;
       this.Name = "MainForm";
+      this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
       this.Text = "RDP Wrapper";
       this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
-      ((System.ComponentModel.ISupportInitialize)(this.seRDPPort)).EndInit();
+      ((System.ComponentModel.ISupportInitialize) (this.seRDPPort)).EndInit();
       this.panActions.ResumeLayout(false);
       this.gbxGeneralSettings.ResumeLayout(false);
       this.gbxGeneralSettings.PerformLayout();
       this.gbxStatus.ResumeLayout(false);
       this.gbxStatus.PerformLayout();
       this.ResumeLayout(false);
-
     }
 
     #endregion
@@ -390,12 +392,12 @@ namespace rdpWrapper {
     private NumericUpDown seRDPPort;
     private Label lRDPPort;
     private CheckBox cbxHonorLegacy;
-    private Panel panActions;
-    private GroupBox gbxGeneralSettings;
+    private System.Windows.Forms.Panel panActions;
+    private System.Windows.Forms.GroupBox gbxGeneralSettings;
     private Label lblAuthMode;
     private Label lblShadowMode;
     private Button btnRestartService;
-    private GroupBox gbxStatus;
+    private System.Windows.Forms.GroupBox gbxStatus;
     private Label lblSupported;
     private Label lblListenerStateValue;
     private Label lblServiceStateValue;
@@ -407,5 +409,6 @@ namespace rdpWrapper {
     private TextBox txtServiceVersion;
     private Button btnTest;
     private Button btnGenerate;
+    private rdpWrapper.SimplTextBox txtLog;
   }
 }

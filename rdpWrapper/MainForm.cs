@@ -42,6 +42,7 @@ namespace rdpWrapper {
 
     private readonly string termSrvFile;
     private readonly Timer refreshTimer;
+    private readonly Logger logger;
 
     public MainForm() {
 
@@ -49,7 +50,10 @@ namespace rdpWrapper {
 
       Icon = Icon.ExtractAssociatedIcon(typeof(MainForm).Assembly.Location);
       Text = $"{Updater.ApplicationTitle} v{Updater.CurrentVersion} {(Environment.Is64BitProcess ? "x64" : "x86")}";
-      StartPosition = FormStartPosition.CenterScreen;
+
+      logger = new Logger();
+      logger.OnNewLogEvent += AddToLog;
+      logger.Log(Text + " - Application started", Logger.StateKind.Info, false);
 
       rgNLAOptions.Items.AddRange([
         "GUI Authentication Only", 
@@ -116,6 +120,8 @@ namespace rdpWrapper {
     private void MainFormLoad(object sender, EventArgs e) {
       
       try {
+        logger.Log("Retrieving system configuration...");
+
         using (var key = Registry.LocalMachine.OpenSubKey(REG_KEY)) {
           if (key != null) {
             cbxSingleSessionPerUser.Checked = Convert.ToInt32(key.GetValue(VALUE_SINGLE_SESSION, 0)) != 0;
@@ -147,11 +153,14 @@ namespace rdpWrapper {
             cbDontDisplayLastUser.Checked = Convert.ToInt32(key.GetValue(VALUE_DONTDISPLAYLASTUSERNAME, 0)) != 0;
         }
 
+        logger.Log("Retrieving system configuration completed", Logger.StateKind.Info);
         TimerTick(null, EventArgs.Empty);
         refreshTimer.Enabled = true;
       }
       catch (Exception ex) {
-        MessageBox.Show("Error loading settings: " + ex.Message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        var message = "Error loading settings: " + ex.Message;
+        logger.Log(message, Logger.StateKind.Error);
+        MessageBox.Show(message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
       }
       btnApply.Enabled = false;
     }
@@ -180,6 +189,7 @@ namespace rdpWrapper {
         if (oldPort != newPort) {
           var p = StartProcess("netsh", $"advfirewall firewall set rule name=\"Remote Desktop\" new localport={newPort}");
           p.WaitForExit();
+          logger.Log($"Firewall rule added for port {newPort}", Logger.StateKind.Warning);
         }
 
         using (var key = Registry.LocalMachine.OpenSubKey(REG_RDP_KEY, true)) {
@@ -214,9 +224,12 @@ namespace rdpWrapper {
           key?.SetValue(VALUE_DONTDISPLAYLASTUSERNAME, cbDontDisplayLastUser.Checked ? 1 : 0, RegistryValueKind.DWord);
         }
         btnApply.Enabled = false;
+        logger.Log("Settings applied", Logger.StateKind.Info);
       }
       catch (Exception ex) {
-        MessageBox.Show("Failed to apply settings: " + ex.Message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        var message = "Failed to apply settings: " + ex.Message;
+        logger.Log(message, Logger.StateKind.Error);
+        MessageBox.Show(message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
       }
     }
 
@@ -243,10 +256,12 @@ namespace rdpWrapper {
       try {
         //todo: async
         ServiceHelper.RestartService("TermService", 10000);
-        MessageBox.Show("TermService restarted successfully", Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+        logger.Log("TermService restarted successfully", Logger.StateKind.Info);
       }
       catch (Exception ex) {
-        MessageBox.Show("Error restarting service: " + ex.Message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        var message = "Error restarting service: " + ex.Message;
+        logger.Log(message, Logger.StateKind.Error);
+        MessageBox.Show(message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
       }
     }
 
@@ -303,7 +318,7 @@ namespace rdpWrapper {
           break;
         case 1:
           lblWrapperStateValue.Text = "Installed";
-          lblWrapperStateValue.ForeColor = Color.Green;
+          lblWrapperStateValue.ForeColor = Color.DarkGreen;
           var wrapperIniPath = Path.Combine(Path.GetDirectoryName(wrapperPath), RDP_WRAP_INI_NAME);
           checkSupported = File.Exists(wrapperIniPath);
           if (wrapperIniPath != wrapperIniLastPath) {
@@ -332,7 +347,7 @@ namespace rdpWrapper {
           break;
         case ServiceControllerStatus.Running:
           lblServiceStateValue.Text = "Running";
-          lblServiceStateValue.ForeColor = Color.Green;
+          lblServiceStateValue.ForeColor = Color.DarkGreen;
           break;
         case ServiceControllerStatus.ContinuePending:
           lblServiceStateValue.Text = "Resuming...";
@@ -354,7 +369,7 @@ namespace rdpWrapper {
 
       if (WinStationHelper.IsListenerWorking()){
         lblListenerStateValue.Text = "Listening";
-        lblListenerStateValue.ForeColor = Color.Green;
+        lblListenerStateValue.ForeColor = Color.DarkGreen;
       }
       else {
         lblListenerStateValue.Text = "Not listening";
@@ -404,7 +419,7 @@ namespace rdpWrapper {
         }
         if (wrapperIniLastSupported) {
           lblSupported.Text = "[fully supported]";
-          lblSupported.ForeColor = Color.Green;
+          lblSupported.ForeColor = Color.DarkGreen;
           btnGenerate.Visible = false;
           return;
         }
@@ -426,9 +441,12 @@ namespace rdpWrapper {
         zydis = ExtractResourceFile("Zydis.dll", workingDir);
         var p = StartProcess("cmd", $"/c \"{offsetFinder}\" >> rdpwrap.ini & exit", workingDir);
         p.WaitForExit();
+        logger.Log("Config regenerated", Logger.StateKind.Info);
       }
       catch (Exception ex) {
-        MessageBox.Show("Failed to generate config: " + ex.Message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        var message = "Failed to generate config: " + ex.Message;
+        logger.Log(message, Logger.StateKind.Error);
+        MessageBox.Show(message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
       }
       finally {
         if (executeCleanup) {
@@ -452,23 +470,22 @@ namespace rdpWrapper {
         var scriptsPath = $"{type.Namespace}.externals.{resourceName}";
         using var stream = type.Assembly.GetManifestResourceStream(scriptsPath);
         using var fileStream = File.Create(filePath);
-        if (stream != null) {
-          stream.Seek(0, SeekOrigin.Begin);
-          stream.CopyTo(fileStream);
-        }
+        stream?.Seek(0, SeekOrigin.Begin);
+        stream?.CopyTo(fileStream);
         return filePath;
       }
-      catch (Exception) {
+      catch (Exception ex) {
+        logger.Log(ex.Message, Logger.StateKind.Warning);
         return null;
       }
     }
 
-    private static void SafeDeleteFile(string filePath) {
+    private void SafeDeleteFile(string filePath) {
       try {
         if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath)) File.Delete(filePath);
       }
-      catch (Exception) {
-        //ignore
+      catch (Exception ex) {
+        logger.Log(ex.Message, Logger.StateKind.Warning);
       }
     }
 
@@ -481,13 +498,46 @@ namespace rdpWrapper {
       if (newIniFile == null) return;
       try {
         ServiceHelper.StopService("TermService", TimeSpan.FromSeconds(10));
+        logger.Log("TermService stopped", Logger.StateKind.Info);
         SafeDeleteFile(wrapperIniLastPath);
         File.Move(newIniFile, wrapperIniLastPath);
         ServiceHelper.StartService("TermService", TimeSpan.FromSeconds(10));
+        logger.Log("TermService started", Logger.StateKind.Info);
       }
       catch (Exception ex) {
-        MessageBox.Show("Failed to update config: " + ex.Message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        var message = "Failed to update config: " + ex.Message;
+        logger.Log(message, Logger.StateKind.Error);
+        MessageBox.Show(message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
       }
+    }
+
+    private void AddToLog(string message, Logger.StateKind state, bool newLine) {
+      if (InvokeRequired) {
+        Invoke(new Action<string, Logger.StateKind, bool>(AddToLog), message, state);
+        return;
+      }
+
+      if (newLine)
+        txtLog.AppendLine($"{DateTime.Now:T} - ", txtLog.ForeColor);
+      switch (state) {
+        case Logger.StateKind.Error:
+          txtLog.AppendLine(message, Color.Red, false);
+          break;
+        case Logger.StateKind.Warning:
+          txtLog.AppendLine(message, Color.Blue, false);
+          break;
+        case Logger.StateKind.Info:
+          txtLog.AppendLine(message, Color.DarkGreen, false);
+          break;
+        default:
+          txtLog.AppendLine(message, txtLog.ForeColor, false);
+          break;
+      }
+
+      // if (!string.IsNullOrEmpty(_logFileName))
+      //   File.AppendAllText(_logFileName, $"{DateTime.Now:T} - {message}\n");
+      txtLog.ScrollToCaret();
+      Application.DoEvents();
     }
   }
 }
