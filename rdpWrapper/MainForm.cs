@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.ServiceProcess;
 using System.Windows.Forms;
 
 namespace rdpWrapper {
@@ -35,9 +36,9 @@ namespace rdpWrapper {
     private const string RDP_WRAP_INI_NAME = "rdpwrap.ini";
 
     private int oldPort;
-    private string wrapperIniLastPath = null;
+    private string wrapperIniLastPath;
     private DateTime wrapperIniLastChecked = DateTime.MinValue;
-    private bool wrapperIniLastSupported = false;
+    private bool wrapperIniLastSupported;
 
     private readonly string termSrvFile;
     private readonly Timer refreshTimer;
@@ -68,12 +69,12 @@ namespace rdpWrapper {
       InsertMenu(menuHandle, 6, MF_BY_POSITION, MF_SYS_MENU_CHECK_UPDATES, "Check for new version");
       InsertMenu(menuHandle, 7, MF_BY_POSITION, MF_SYS_MENU_ABOUT_ID, "&About…");
 
-      Load += mainFormLoad;
+      Load += MainFormLoad;
 
       termSrvFile = Path.Combine(Environment.SystemDirectory, "termsrv.dll");
 
       refreshTimer = new Timer();
-      refreshTimer.Tick += timerTick;
+      refreshTimer.Tick += TimerTick;
       refreshTimer.Interval = 1000;
 
 #if !DEBUG
@@ -82,7 +83,7 @@ namespace rdpWrapper {
         timer.Enabled = false;
         timer.Enabled = !Updater.CheckForUpdates(true);
       };
-      timer.Interval = 1000;
+      timer.Interval = 3000;
       timer.Enabled = true;
 #endif
     }
@@ -112,41 +113,41 @@ namespace rdpWrapper {
       }
     }
 
-    private void mainFormLoad(object sender, EventArgs e) {
+    private void MainFormLoad(object sender, EventArgs e) {
+      
       try {
-        //RDP.DisconnectedText := 'Disconnected.';
-        //RDP.ConnectingText := 'Connecting...';
-        //RDP.ConnectedStatusText := 'Connected.';
-        //RDP.UserName := '';
-        //RDP.Server := '127.0.0.2';
-
         using (var key = Registry.LocalMachine.OpenSubKey(REG_KEY)) {
-          cbxSingleSessionPerUser.Checked = Convert.ToInt32(key.GetValue(VALUE_SINGLE_SESSION, 0)) != 0;
-          cbxAllowTSConnections.Checked = Convert.ToInt32(key.GetValue(VALUE_DENY_TS_CONNECTIONS, 0)) == 0;
-          cbxHonorLegacy.Checked = Convert.ToInt32(key.GetValue(VALUE_HONORLEGACY, 0)) != 0;
+          if (key != null) {
+            cbxSingleSessionPerUser.Checked = Convert.ToInt32(key.GetValue(VALUE_SINGLE_SESSION, 0)) != 0;
+            cbxAllowTSConnections.Checked = Convert.ToInt32(key.GetValue(VALUE_DENY_TS_CONNECTIONS, 0)) == 0;
+            cbxHonorLegacy.Checked = Convert.ToInt32(key.GetValue(VALUE_HONORLEGACY, 0)) != 0;
+          }
         }
 
         using (var key = Registry.LocalMachine.OpenSubKey(REG_RDP_KEY)) {
-          oldPort = Convert.ToInt32(key.GetValue(VALUE_PORT, 3389));
-          seRDPPort.Value = oldPort;
-          int userAuthentication = Convert.ToInt32(key.GetValue(VALUE_NLA, 0));
-          int securityLayer = Convert.ToInt32(key.GetValue(VALUE_SECURITY, 0));
+          if (key != null) {
+            oldPort = Convert.ToInt32(key.GetValue(VALUE_PORT, 3389));
+            seRDPPort.Value = oldPort;
+            var userAuthentication = Convert.ToInt32(key.GetValue(VALUE_NLA, 0));
+            var securityLayer = Convert.ToInt32(key.GetValue(VALUE_SECURITY, 0));
 
-          if (securityLayer == 0 && userAuthentication == 0)
-            rgNLAOptions.SelectedIndex = 0;
-          else if (securityLayer == 1 && userAuthentication == 0)
-            rgNLAOptions.SelectedIndex = 1;
-          else if (securityLayer == 2 && userAuthentication == 1) 
-            rgNLAOptions.SelectedIndex = 2;
+            rgNLAOptions.SelectedIndex = securityLayer switch {
+              0 when userAuthentication == 0 => 0,
+              1 when userAuthentication == 0 => 1,
+              2 when userAuthentication == 1 => 2,
+              _ => rgNLAOptions.SelectedIndex
+            };
 
-          rgShadowOptions.SelectedIndex = Convert.ToInt32(key.GetValue(VALUE_SHADOW, 0));
+            rgShadowOptions.SelectedIndex = Convert.ToInt32(key.GetValue(VALUE_SHADOW, 0));
+          }
         }
 
         using (var key = Registry.LocalMachine.OpenSubKey(REG_WINLOGON_KEY)) {
-          cbDontDisplayLastUser.Checked = Convert.ToInt32(key.GetValue(VALUE_DONTDISPLAYLASTUSERNAME, 0)) != 0;
+          if (key != null)
+            cbDontDisplayLastUser.Checked = Convert.ToInt32(key.GetValue(VALUE_DONTDISPLAYLASTUSERNAME, 0)) != 0;
         }
 
-        timerTick(null, EventArgs.Empty);
+        TimerTick(null, EventArgs.Empty);
         refreshTimer.Enabled = true;
       }
       catch (Exception ex) {
@@ -155,7 +156,7 @@ namespace rdpWrapper {
       btnApply.Enabled = false;
     }
 
-    private void btnCloseClick(object sender, EventArgs e) {
+    private void BtnCloseClick(object sender, EventArgs e) {
       Close();
     }
 
@@ -165,12 +166,14 @@ namespace rdpWrapper {
       }
     }
 
-    private void btnApplyClick(object sender, EventArgs e) {
+    private void BtnApplyClick(object sender, EventArgs e) {
       try {
         using (var key = Registry.LocalMachine.OpenSubKey(REG_KEY, writable: true)) {
-          key.SetValue(VALUE_SINGLE_SESSION, cbxSingleSessionPerUser.Checked ? 1 : 0, RegistryValueKind.DWord);
-          key.SetValue(VALUE_DENY_TS_CONNECTIONS, cbxAllowTSConnections.Checked ? 0 : 1, RegistryValueKind.DWord);
-          key.SetValue(VALUE_HONORLEGACY, cbxHonorLegacy.Checked ? 0 : 1, RegistryValueKind.DWord);
+          if (key != null) {
+            key.SetValue(VALUE_SINGLE_SESSION, cbxSingleSessionPerUser.Checked ? 1 : 0, RegistryValueKind.DWord);
+            key.SetValue(VALUE_DENY_TS_CONNECTIONS, cbxAllowTSConnections.Checked ? 0 : 1, RegistryValueKind.DWord);
+            key.SetValue(VALUE_HONORLEGACY, cbxHonorLegacy.Checked ? 0 : 1, RegistryValueKind.DWord);
+          }
         }
 
         var newPort = (int)seRDPPort.Value;
@@ -180,33 +183,35 @@ namespace rdpWrapper {
         }
 
         using (var key = Registry.LocalMachine.OpenSubKey(REG_RDP_KEY, true)) {
-          key.SetValue(VALUE_PORT, newPort, RegistryValueKind.DWord);
-          oldPort = newPort;
+          if (key != null) {
+            key.SetValue(VALUE_PORT, newPort, RegistryValueKind.DWord);
+            oldPort = newPort;
 
-          switch (rgNLAOptions.SelectedIndex) {
-            case 0:
-              key.SetValue(VALUE_NLA, 0, RegistryValueKind.DWord);
-              key.SetValue(VALUE_SECURITY, 0, RegistryValueKind.DWord);
-              break;
-            case 1:
-              key.SetValue(VALUE_NLA, 0, RegistryValueKind.DWord);
-              key.SetValue(VALUE_SECURITY, 1, RegistryValueKind.DWord);
-              break;
-            case 2:
-              key.SetValue(VALUE_NLA, 1, RegistryValueKind.DWord);
-              key.SetValue(VALUE_SECURITY, 2, RegistryValueKind.DWord);
-              break;
+            switch (rgNLAOptions.SelectedIndex) {
+              case 0:
+                key.SetValue(VALUE_NLA, 0, RegistryValueKind.DWord);
+                key.SetValue(VALUE_SECURITY, 0, RegistryValueKind.DWord);
+                break;
+              case 1:
+                key.SetValue(VALUE_NLA, 0, RegistryValueKind.DWord);
+                key.SetValue(VALUE_SECURITY, 1, RegistryValueKind.DWord);
+                break;
+              case 2:
+                key.SetValue(VALUE_NLA, 1, RegistryValueKind.DWord);
+                key.SetValue(VALUE_SECURITY, 2, RegistryValueKind.DWord);
+                break;
+            }
+
+            key.SetValue(VALUE_SHADOW, rgShadowOptions.SelectedIndex, RegistryValueKind.DWord);
           }
-
-          key.SetValue(VALUE_SHADOW, rgShadowOptions.SelectedIndex, RegistryValueKind.DWord);
         }
 
         using (var key = Registry.LocalMachine.CreateSubKey(REG_TS_KEY)) {
-          key.SetValue(VALUE_SHADOW, rgShadowOptions.SelectedIndex, RegistryValueKind.DWord);
+          key?.SetValue(VALUE_SHADOW, rgShadowOptions.SelectedIndex, RegistryValueKind.DWord);
         }
 
         using (var key = Registry.LocalMachine.CreateSubKey(REG_WINLOGON_KEY)) {
-          key.SetValue(VALUE_DONTDISPLAYLASTUSERNAME, cbDontDisplayLastUser.Checked ? 1 : 0, RegistryValueKind.DWord);
+          key?.SetValue(VALUE_DONTDISPLAYLASTUSERNAME, cbDontDisplayLastUser.Checked ? 1 : 0, RegistryValueKind.DWord);
         }
         btnApply.Enabled = false;
       }
@@ -215,7 +220,7 @@ namespace rdpWrapper {
       }
     }
 
-    private void onChanged(object sender, EventArgs e) {
+    private void OnChanged(object sender, EventArgs e) {
       btnApply.Enabled = true;
     }
 
@@ -225,7 +230,7 @@ namespace rdpWrapper {
       p.StartInfo.UseShellExecute = true;
       p.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
       p.StartInfo.FileName = app;
-      p.StartInfo.WorkingDirectory = workingDir ?? Path.GetDirectoryName(app);
+      p.StartInfo.WorkingDirectory = (workingDir ?? Path.GetDirectoryName(app)) ?? string.Empty;
       p.StartInfo.Arguments = arg;
       p.StartInfo.RedirectStandardOutput = false;
       p.StartInfo.RedirectStandardInput = false;
@@ -237,14 +242,6 @@ namespace rdpWrapper {
     private void btnRestartService_Click(object sender, EventArgs e) {
       try {
         //todo: async
-
-        //if (ServiceHelper.RestartServiceNative()) {
-        //  MessageBox.Show("Service restarted.", Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
-        //}
-        //else {
-        //  MessageBox.Show("Failed to restart TermService.", Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
-        //}
-
         ServiceHelper.RestartService("TermService", 10000);
         MessageBox.Show("TermService restarted successfully", Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
       }
@@ -274,27 +271,24 @@ namespace rdpWrapper {
             return -1;
         }
 
-        string lowerPath = termServicePath.ToLower();
+        var lowerPath = termServicePath.ToLower();
         if (!lowerPath.Contains("termsrv.dll") && !lowerPath.Contains("rdpwrap.dll"))
           return 2;
 
-        if (lowerPath.Contains("rdpwrap.dll")) {
-          wrapperPath = termServicePath;
-          return 1;
-        }
-
-        return 0;
+        if (!lowerPath.Contains("rdpwrap.dll")) return 0;
+        wrapperPath = termServicePath;
+        return 1;
       }
       catch {
         return -1;
       }
     }
 
-    private string GetVersionString(FileVersionInfo versionInfo) {
+    private static string GetVersionString(FileVersionInfo versionInfo) {
       return versionInfo.FileMajorPart + "." + versionInfo.FileMinorPart + "." + versionInfo.FileBuildPart + "." + versionInfo.FilePrivatePart;
     }
 
-    private void timerTick(object sender, EventArgs e) {
+    private void TimerTick(object sender, EventArgs e) {
 
       var checkSupported = false;
       var wrapperInstalled = IsWrapperInstalled(out var wrapperPath);
@@ -323,39 +317,37 @@ namespace rdpWrapper {
           break;
       }
 
-      var termServiceState = ServiceHelper.GetServiceState();
-      switch (termServiceState) {
-        case -1:
-        case 0:
-          lblServiceStateValue.Text = "Unknown";
-          lblServiceStateValue.ForeColor = ForeColor;
-          break;
-        case ServiceHelper.SERVICE_STOPPED:
+      switch (ServiceHelper.GetServiceState()) {
+        case ServiceControllerStatus.Stopped:
           lblServiceStateValue.Text = "Stopped";
           lblServiceStateValue.ForeColor = Color.Red;
           break;
-        case ServiceHelper.SERVICE_START_PENDING:
+        case ServiceControllerStatus.StartPending:
           lblServiceStateValue.Text = "Starting..";
           lblServiceStateValue.ForeColor = ForeColor;
           break;
-        case ServiceHelper.SERVICE_STOP_PENDING:
+        case ServiceControllerStatus.StopPending:
           lblServiceStateValue.Text = "Stopping...";
           lblServiceStateValue.ForeColor = ForeColor;
           break;
-        case ServiceHelper.SERVICE_RUNNING:
+        case ServiceControllerStatus.Running:
           lblServiceStateValue.Text = "Running";
           lblServiceStateValue.ForeColor = Color.Green;
           break;
-        case ServiceHelper.SERVICE_CONTINUE_PENDING:
+        case ServiceControllerStatus.ContinuePending:
           lblServiceStateValue.Text = "Resuming...";
           lblServiceStateValue.ForeColor = ForeColor;
           break;
-        case ServiceHelper.SERVICE_PAUSE_PENDING:
+        case ServiceControllerStatus.PausePending:
           lblServiceStateValue.Text = "Suspending...";
           lblServiceStateValue.ForeColor = ForeColor;
           break;
-        case ServiceHelper.SERVICE_PAUSED:
+        case ServiceControllerStatus.Paused:
           lblServiceStateValue.Text = "Suspended";
+          lblServiceStateValue.ForeColor = ForeColor;
+          break;
+        default:
+          lblServiceStateValue.Text = "Unknown";
           lblServiceStateValue.ForeColor = ForeColor;
           break;
       }
@@ -444,14 +436,11 @@ namespace rdpWrapper {
           SafeDeleteFile(zydis);
         }
       }
-      if (File.Exists(iniFile))
-        return iniFile;
-      return null;
+      return File.Exists(iniFile) ? iniFile : null;
     }
 
     private string ExtractResourceFile(string resourceName, string path, bool deleteExisting = false) {
-      var fileName = resourceName;//.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
-      var filePath = Path.Combine(path, fileName);
+      var filePath = Path.Combine(path, resourceName);
       if (File.Exists(filePath)) {
         if (!deleteExisting) {
           return filePath; //todo: delete
@@ -459,10 +448,11 @@ namespace rdpWrapper {
         SafeDeleteFile(filePath);
       }
       try {
-        var type = this.GetType();
+        var type = GetType();
         var scriptsPath = $"{type.Namespace}.externals.{resourceName}";
-        using (var stream = type.Assembly.GetManifestResourceStream(scriptsPath))
-        using (var fileStream = File.Create(filePath)) {
+        using var stream = type.Assembly.GetManifestResourceStream(scriptsPath);
+        using var fileStream = File.Create(filePath);
+        if (stream != null) {
           stream.Seek(0, SeekOrigin.Begin);
           stream.CopyTo(fileStream);
         }
@@ -473,7 +463,7 @@ namespace rdpWrapper {
       }
     }
 
-    private void SafeDeleteFile(string filePath) {
+    private static void SafeDeleteFile(string filePath) {
       try {
         if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath)) File.Delete(filePath);
       }

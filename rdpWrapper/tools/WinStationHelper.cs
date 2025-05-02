@@ -7,7 +7,7 @@ namespace rdpWrapper {
     private const string WINSTADLL = "winsta.dll";
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WTS_SESSION_INFO {
+    public struct WtsSessionInfo {
       public int SessionId;
       [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 33)]
       public string Name;
@@ -25,14 +25,14 @@ namespace rdpWrapper {
     private static extern bool WinStationFreeMemory(IntPtr pMemory);
 
     internal static bool IsListenerWorking() {
-      if (!WinStationEnumerateW(IntPtr.Zero, out IntPtr ppSessionInfo, out int count))
+      if (!WinStationEnumerateW(IntPtr.Zero, out var ppSessionInfo, out var count))
         return false;
 
       try {
-        int size = Marshal.SizeOf(typeof(WTS_SESSION_INFO));
-        for (int i = 0; i < count; i++) {
-          IntPtr pItem = IntPtr.Add(ppSessionInfo, i * size);
-          WTS_SESSION_INFO sessionInfo = Marshal.PtrToStructure<WTS_SESSION_INFO>(pItem);
+        var size = Marshal.SizeOf(typeof(WtsSessionInfo));
+        for (var i = 0; i < count; i++) {
+          var pItem = IntPtr.Add(ppSessionInfo, i * size);
+          var sessionInfo = Marshal.PtrToStructure<WtsSessionInfo>(pItem);
           if (sessionInfo.Name == "RDP-Tcp")
             return true;
         }

@@ -57,7 +57,7 @@ namespace rdpWrapper {
       this.btnClose.Size = new System.Drawing.Size(100, 35);
       this.btnClose.TabIndex = 2;
       this.btnClose.Text = "Close";
-      this.btnClose.Click += new System.EventHandler(this.btnCloseClick);
+      this.btnClose.Click += new System.EventHandler(this.BtnCloseClick);
       // 
       // btnApply
       // 
@@ -67,7 +67,7 @@ namespace rdpWrapper {
       this.btnApply.Size = new System.Drawing.Size(100, 35);
       this.btnApply.TabIndex = 1;
       this.btnApply.Text = "Apply";
-      this.btnApply.Click += new System.EventHandler(this.btnApplyClick);
+      this.btnApply.Click += new System.EventHandler(this.BtnApplyClick);
       // 
       // cbxSingleSessionPerUser
       // 
@@ -77,7 +77,7 @@ namespace rdpWrapper {
       this.cbxSingleSessionPerUser.Size = new System.Drawing.Size(199, 24);
       this.cbxSingleSessionPerUser.TabIndex = 3;
       this.cbxSingleSessionPerUser.Text = "Single session per user";
-      this.cbxSingleSessionPerUser.CheckedChanged += new System.EventHandler(this.onChanged);
+      this.cbxSingleSessionPerUser.CheckedChanged += new System.EventHandler(this.OnChanged);
       // 
       // cbxAllowTSConnections
       // 
@@ -87,7 +87,7 @@ namespace rdpWrapper {
       this.cbxAllowTSConnections.Size = new System.Drawing.Size(210, 24);
       this.cbxAllowTSConnections.TabIndex = 0;
       this.cbxAllowTSConnections.Text = "Enable Remote Desktop";
-      this.cbxAllowTSConnections.CheckedChanged += new System.EventHandler(this.onChanged);
+      this.cbxAllowTSConnections.CheckedChanged += new System.EventHandler(this.OnChanged);
       // 
       // cbDontDisplayLastUser
       // 
@@ -97,7 +97,7 @@ namespace rdpWrapper {
       this.cbDontDisplayLastUser.Size = new System.Drawing.Size(239, 24);
       this.cbDontDisplayLastUser.TabIndex = 4;
       this.cbDontDisplayLastUser.Text = "Do not display last username";
-      this.cbDontDisplayLastUser.CheckedChanged += new System.EventHandler(this.onChanged);
+      this.cbDontDisplayLastUser.CheckedChanged += new System.EventHandler(this.OnChanged);
       // 
       // rgNLAOptions
       // 
@@ -108,7 +108,7 @@ namespace rdpWrapper {
       this.rgNLAOptions.Name = "rgNLAOptions";
       this.rgNLAOptions.Size = new System.Drawing.Size(274, 28);
       this.rgNLAOptions.TabIndex = 7;
-      this.rgNLAOptions.SelectedIndexChanged += new System.EventHandler(this.onChanged);
+      this.rgNLAOptions.SelectedIndexChanged += new System.EventHandler(this.OnChanged);
       // 
       // rgShadowOptions
       // 
@@ -119,7 +119,7 @@ namespace rdpWrapper {
       this.rgShadowOptions.Name = "rgShadowOptions";
       this.rgShadowOptions.Size = new System.Drawing.Size(274, 28);
       this.rgShadowOptions.TabIndex = 9;
-      this.rgShadowOptions.SelectedIndexChanged += new System.EventHandler(this.onChanged);
+      this.rgShadowOptions.SelectedIndexChanged += new System.EventHandler(this.OnChanged);
       // 
       // seRDPPort
       // 
@@ -143,7 +143,7 @@ namespace rdpWrapper {
             0,
             0,
             0});
-      this.seRDPPort.ValueChanged += new System.EventHandler(this.onChanged);
+      this.seRDPPort.ValueChanged += new System.EventHandler(this.OnChanged);
       // 
       // lRDPPort
       // 
