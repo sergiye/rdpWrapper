@@ -18,15 +18,22 @@ Support the Armed Forces of Ukraine and People Affected by Russia’s Aggression
 
 `RDP Wrapper` is a RDP setup and configuration utility
 
-This tool is inspired by the [stascorp's rdpwrap project](https://github.com/stascorp/rdpwrap), however it is written in pure .NET instead of Pascal/Delphi, and it can auto-generate configuration for new windows versions.
+This tool is inspired by the [stascorp's rdpwrap project](https://github.com/stascorp/rdpwrap).
+However it is written in pure .NET instead of Pascal/Delphi.
+The main idea was to create small and portable single-file application with all required functionality.
+And yes, it can auto-generate offsets for new/updated Windows versions - thanks to the [llccd's RDPWrapOffsetFinder project](https://github.com/llccd/RDPWrapOffsetFinder).
 
 ### What can it do?
 
 The application is portable and has the following features:
+ - RDP Wrapper does not patch termsrv.dll, it loads termsrv with different parameters
+ - RDP host server on any Windows edition beginning from Vista
+ - Using the same user simultaneously for local and remote logon (see configuration app)
+ - Console and remote sessions at the same time
  - show RDP service current status
  - configure RDP options
  - install / uninstall wrapper
- - generate config for not supported OS (after windows update)
+ - generate config for not supported OS (after windows update) - make sure you have [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#visual-studio-2015-2017-2019-and-2022) installed
  - check for app updates (from main window system menu)
 
 ### Preview of the application UI
