@@ -399,7 +399,7 @@ namespace rdpWrapper {
       }
       else {
         var versionInfo = FileVersionInfo.GetVersionInfo(wrapperPath);
-        lblWrapperVersion.Text = "ver. " + GetVersionString(versionInfo);
+        lblWrapperVersion.Text = GetVersionString(versionInfo);
         lblWrapperVersion.ForeColor = ForeColor;
       }
 
@@ -409,7 +409,7 @@ namespace rdpWrapper {
       }
       else {
         var versionInfo = FileVersionInfo.GetVersionInfo(termSrvFile);
-        txtServiceVersion.Text = "ver. " + GetVersionString(versionInfo);
+        txtServiceVersion.Text = GetVersionString(versionInfo);
         txtServiceVersion.ForeColor = ForeColor;
 
         lblSupported.Visible = checkSupported;
