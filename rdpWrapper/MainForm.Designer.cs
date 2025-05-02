@@ -184,8 +184,8 @@ namespace rdpWrapper {
       this.panActions.Controls.Add(this.btnTest);
       this.panActions.Controls.Add(this.btnClose);
       this.panActions.Controls.Add(this.btnApply);
-      this.panActions.Dock = System.Windows.Forms.DockStyle.Top;
-      this.panActions.Location = new System.Drawing.Point(0, 212);
+      this.panActions.Dock = System.Windows.Forms.DockStyle.Bottom;
+      this.panActions.Location = new System.Drawing.Point(0, 267);
       this.panActions.Margin = new System.Windows.Forms.Padding(2);
       this.panActions.Name = "panActions";
       this.panActions.Size = new System.Drawing.Size(373, 30);
@@ -420,9 +420,8 @@ namespace rdpWrapper {
       // 
       // txtLog
       // 
-      this.txtLog.BorderStyle = System.Windows.Forms.BorderStyle.None;
       this.txtLog.Dock = System.Windows.Forms.DockStyle.Fill;
-      this.txtLog.Location = new System.Drawing.Point(0, 242);
+      this.txtLog.Location = new System.Drawing.Point(0, 212);
       this.txtLog.Margin = new System.Windows.Forms.Padding(2);
       this.txtLog.Name = "txtLog";
       this.txtLog.ReadOnly = true;

@@ -44,7 +44,7 @@ The application is portable and has the following features:
 
 ### Preview of the application UI
 
-[<img src="https://github.com/sergiye/rdpWrapper/raw/master/preview.png" alt="Themes" width="300"/>](https://github.com/sergiye/rdpWrapper/releases)
+[<img src="https://github.com/sergiye/rdpWrapper/raw/master/preview.png" alt="Themes" width="300"/>](https://raw.githubusercontent.com/sergiye/rdpWrapper/master/preview.png)
 
 
 ## Download
