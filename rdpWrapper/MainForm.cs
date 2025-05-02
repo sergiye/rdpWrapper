@@ -35,6 +35,7 @@ namespace rdpWrapper {
     private const string VALUE_SHADOW = "Shadow";
     
     private const string RDP_WRAP_INI_NAME = "rdpwrap.ini";
+    private const string RDP_SERVICE_NAME = "TermService";
 
     private int oldPort;
     private string wrapperIniLastPath;
@@ -44,6 +45,7 @@ namespace rdpWrapper {
     private readonly string termSrvFile;
     private readonly Timer refreshTimer;
     private readonly Logger logger;
+    private readonly ServiceHelper serviceHelper;
 
     public MainForm() {
 
@@ -54,8 +56,10 @@ namespace rdpWrapper {
 
       logger = new Logger();
       logger.OnNewLogEvent += AddToLog;
-      logger.Log(Text + " - Application started", Logger.StateKind.Info, false);
+      logger.Log($"Application started: {Text}", Logger.StateKind.Info, false);
 
+      serviceHelper = new ServiceHelper(logger);
+      
       rgNLAOptions.Items.AddRange([
         "GUI Authentication Only", 
         "Default RDP Authentication", 
@@ -190,7 +194,7 @@ namespace rdpWrapper {
         if (oldPort != newPort) {
           var p = StartProcess("netsh", $"advfirewall firewall set rule name=\"Remote Desktop\" new localport={newPort}");
           p.WaitForExit();
-          logger.Log($"Firewall rule added for port {newPort}", Logger.StateKind.Warning);
+          logger.Log($"Firewall rule added for port {newPort}", Logger.StateKind.Info);
         }
 
         using (var key = Registry.LocalMachine.OpenSubKey(REG_RDP_KEY, true)) {
@@ -255,14 +259,18 @@ namespace rdpWrapper {
 
     private void btnRestartService_Click(object sender, EventArgs e) {
       try {
+        btnRestartService.Enabled = false;
         //todo: async
-        ServiceHelper.RestartService("TermService", 10000);
-        logger.Log("TermService restarted successfully", Logger.StateKind.Warning);
+        serviceHelper.StopService(RDP_SERVICE_NAME, TimeSpan.FromSeconds(10));
+        serviceHelper.StartService(RDP_SERVICE_NAME, TimeSpan.FromSeconds(10));
       }
       catch (Exception ex) {
         var message = "Error restarting service: " + ex.Message;
         logger.Log(message, Logger.StateKind.Error);
         MessageBox.Show(message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+      }
+      finally {
+        btnRestartService.Enabled = true;
       }
     }
 
@@ -341,7 +349,7 @@ namespace rdpWrapper {
           break;
       }
 
-      switch (ServiceHelper.GetServiceState()) {
+      switch (serviceHelper.GetServiceState(RDP_SERVICE_NAME)) {
         case ServiceControllerStatus.Stopped:
           lblServiceStateValue.Text = "Stopped";
           lblServiceStateValue.ForeColor = Color.Red;
@@ -444,13 +452,14 @@ namespace rdpWrapper {
       string offsetFinder = null;
       string zydis = null;
       try {
+        logger.Log("Generating config...");
         var workingDir = Path.GetTempPath();
         iniFile = ExtractResourceFile("rdpwrap.ini", workingDir, true);
         offsetFinder = ExtractResourceFile("RDPWrapOffsetFinder.exe", workingDir);
         zydis = ExtractResourceFile("Zydis.dll", workingDir);
         var p = StartProcess("cmd", $"/c \"{offsetFinder}\" >> rdpwrap.ini & exit", workingDir);
         p.WaitForExit();
-        logger.Log("Config regenerated", Logger.StateKind.Info);
+        logger.Log(" Done", Logger.StateKind.Info, false);
       }
       catch (Exception ex) {
         var message = "Failed to generate config: " + ex.Message;
@@ -467,12 +476,12 @@ namespace rdpWrapper {
       if (string.IsNullOrEmpty(iniFile) || !File.Exists(iniFile)) return;
       
       try {
-        ServiceHelper.StopService("TermService", TimeSpan.FromSeconds(10));
-        logger.Log("TermService stopped", Logger.StateKind.Warning);
+        serviceHelper.StopService(RDP_SERVICE_NAME, TimeSpan.FromSeconds(10));
+
         SafeDeleteFile(destFilePath);
         File.Move(iniFile, destFilePath);
-        ServiceHelper.StartService("TermService", TimeSpan.FromSeconds(10));
-        logger.Log("TermService started", Logger.StateKind.Warning);
+
+        serviceHelper.StartService(RDP_SERVICE_NAME, TimeSpan.FromSeconds(10));
       }
       catch (Exception ex) {
         var message = "Failed to update config: " + ex.Message;
@@ -499,7 +508,7 @@ namespace rdpWrapper {
         return filePath;
       }
       catch (Exception ex) {
-        logger.Log(ex.Message, Logger.StateKind.Warning);
+        logger.Log(ex.Message, Logger.StateKind.Error);
         return null;
       }
     }
@@ -509,7 +518,7 @@ namespace rdpWrapper {
         if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath)) File.Delete(filePath);
       }
       catch (Exception ex) {
-        logger.Log(ex.Message, Logger.StateKind.Warning);
+        logger.Log(ex.Message, Logger.StateKind.Error);
       }
     }
 
@@ -518,7 +527,13 @@ namespace rdpWrapper {
     }
 
     private void btnGenerate_Click(object sender, EventArgs e) {
-      GenerateIniFile(wrapperIniLastPath);
+      try {
+        btnGenerate.Enabled = false;
+        GenerateIniFile(wrapperIniLastPath);
+      }
+      finally {
+        btnGenerate.Enabled = true;
+      }
     }
 
     private void AddToLog(string message, Logger.StateKind state, bool newLine) {
@@ -533,11 +548,8 @@ namespace rdpWrapper {
         case Logger.StateKind.Error:
           txtLog.AppendLine(message, Color.Red, false);
           break;
-        case Logger.StateKind.Warning:
-          txtLog.AppendLine(message, Color.Blue, false);
-          break;
         case Logger.StateKind.Info:
-          txtLog.AppendLine(message, Color.DarkGreen, false);
+          txtLog.AppendLine(message, Color.Blue, false);
           break;
         default:
           txtLog.AppendLine(message, txtLog.ForeColor, false);
@@ -582,7 +594,7 @@ namespace rdpWrapper {
     private void btnInstall_Click(object sender, EventArgs e) {
 
       try {
-        logger.Log("Extracting files...");
+        btnInstall.Enabled = false;
         //string programFilesX86 = Environment.ExpandEnvironmentVariables("%ProgramFiles(x86)%");
         var wrapperPath = Path.Combine(Environment.ExpandEnvironmentVariables("%ProgramW6432%"), "RDP Wrapper");
         Directory.CreateDirectory(wrapperPath);
@@ -593,7 +605,7 @@ namespace rdpWrapper {
 
         if (!SetWrapperDll(rdpWrap))
           return;
-        
+
         GenerateIniFile(Path.Combine(wrapperPath, "rdpwrap.ini"));
 
         //todo: Thread.Sleep(1000); 
@@ -605,13 +617,20 @@ namespace rdpWrapper {
         logger.Log(message, Logger.StateKind.Error);
         MessageBox.Show(message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
       }
+      finally {
+        btnInstall.Enabled = true;
+      }
     }
 
     private void btnUninstall_Click(object sender, EventArgs e) {
       try {
+        btnUninstall.Enabled = false;
         logger.Log("Uninstalling...");
         logger.Log("Resetting service library...");
-        using (var reg = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, Environment.Is64BitProcess ? RegistryView.Registry64 : RegistryView.Registry32).OpenSubKey(@"SYSTEM\CurrentControlSet\Services\TermService\Parameters", writable: true)) {
+        using (var reg = RegistryKey
+                 .OpenBaseKey(RegistryHive.LocalMachine,
+                   Environment.Is64BitProcess ? RegistryView.Registry64 : RegistryView.Registry32)
+                 .OpenSubKey(@"SYSTEM\CurrentControlSet\Services\TermService\Parameters", writable: true)) {
           if (reg != null) {
             reg.SetValue("ServiceDll", @"%SystemRoot%\System32\termsrv.dll", RegistryValueKind.ExpandString);
           }
@@ -621,17 +640,16 @@ namespace rdpWrapper {
           }
         }
 
-        logger.Log("Terminating service...");
-        ServiceHelper.StopService("TermService", TimeSpan.FromSeconds(10));
-        logger.Log(" Done", Logger.StateKind.Info, false);
+        var serviceState = serviceHelper.GetServiceState(RDP_SERVICE_NAME); 
+        if (serviceState.HasValue && serviceState == ServiceControllerStatus.Running)
+          serviceHelper.StopService(RDP_SERVICE_NAME, TimeSpan.FromSeconds(10));
 
         var wrapperPath = Path.Combine(Environment.ExpandEnvironmentVariables("%ProgramW6432%"), "RDP Wrapper");
         logger.Log("Removed folder: " + wrapperPath);
         Directory.Delete(wrapperPath, true);
 
-        logger.Log("Starting TermService...");
-        ServiceHelper.StartService("TermService", TimeSpan.FromSeconds(10));
-        logger.Log(" Done", Logger.StateKind.Info, false);
+        if (serviceState.HasValue)
+          serviceHelper.StartService(RDP_SERVICE_NAME, TimeSpan.FromSeconds(10));
 
         cbxAllowTSConnections.Checked = false;
         btnApply.PerformClick();
@@ -640,6 +658,9 @@ namespace rdpWrapper {
         var message = "Failed to Install: " + ex.Message;
         logger.Log(message, Logger.StateKind.Error);
         MessageBox.Show(message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+      }
+      finally {
+        btnUninstall.Enabled = true;
       }
     }
   }

@@ -7,7 +7,6 @@ namespace rdpWrapper {
     internal enum StateKind {
       Log,
       Info,
-      Warning,
       Error,
     }
 
