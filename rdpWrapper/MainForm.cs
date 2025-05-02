@@ -7,6 +7,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Windows.Forms;
+using Timer = System.Windows.Forms.Timer;
 
 namespace rdpWrapper {
 
@@ -153,7 +154,7 @@ namespace rdpWrapper {
             cbDontDisplayLastUser.Checked = Convert.ToInt32(key.GetValue(VALUE_DONTDISPLAYLASTUSERNAME, 0)) != 0;
         }
 
-        logger.Log("Retrieving system configuration completed", Logger.StateKind.Info);
+        logger.Log(" Completed", Logger.StateKind.Info, false);
         TimerTick(null, EventArgs.Empty);
         refreshTimer.Enabled = true;
       }
@@ -175,7 +176,7 @@ namespace rdpWrapper {
       }
     }
 
-    private void BtnApplyClick(object sender, EventArgs e) {
+    private void btnApply_Click(object sender, EventArgs e) {
       try {
         using (var key = Registry.LocalMachine.OpenSubKey(REG_KEY, writable: true)) {
           if (key != null) {
@@ -256,7 +257,7 @@ namespace rdpWrapper {
       try {
         //todo: async
         ServiceHelper.RestartService("TermService", 10000);
-        logger.Log("TermService restarted successfully", Logger.StateKind.Info);
+        logger.Log("TermService restarted successfully", Logger.StateKind.Warning);
       }
       catch (Exception ex) {
         var message = "Error restarting service: " + ex.Message;
@@ -311,10 +312,14 @@ namespace rdpWrapper {
         case -1:
           lblWrapperStateValue.Text = "Unknown";
           lblWrapperStateValue.ForeColor = Color.Gray;
+          btnInstall.Visible = false;
+          btnUninstall.Visible = false;
           break;
         case 0:
           lblWrapperStateValue.Text = "Not installed";
           lblWrapperStateValue.ForeColor = Color.Gray;
+          btnInstall.Visible = true;
+          btnUninstall.Visible = false;
           break;
         case 1:
           lblWrapperStateValue.Text = "Installed";
@@ -325,10 +330,14 @@ namespace rdpWrapper {
             wrapperIniLastPath = wrapperIniPath;
             wrapperIniLastChecked = DateTime.MinValue;
           }
+          btnInstall.Visible = false;
+          btnUninstall.Visible = true;
           break;
         case 2:
           lblWrapperStateValue.Text = "3rd-party";
           lblWrapperStateValue.ForeColor = Color.Red;
+          btnInstall.Visible = false;
+          btnUninstall.Visible = false;
           break;
       }
 
@@ -429,7 +438,7 @@ namespace rdpWrapper {
       btnGenerate.Visible = true;
     }
 
-    private string GenerateIniFile(bool executeCleanup = false) {
+    private void GenerateIniFile(string destFilePath, bool executeCleanup = true) {
 
       string iniFile = null;
       string offsetFinder = null;
@@ -454,7 +463,22 @@ namespace rdpWrapper {
           SafeDeleteFile(zydis);
         }
       }
-      return File.Exists(iniFile) ? iniFile : null;
+
+      if (string.IsNullOrEmpty(iniFile) || !File.Exists(iniFile)) return;
+      
+      try {
+        ServiceHelper.StopService("TermService", TimeSpan.FromSeconds(10));
+        logger.Log("TermService stopped", Logger.StateKind.Warning);
+        SafeDeleteFile(destFilePath);
+        File.Move(iniFile, destFilePath);
+        ServiceHelper.StartService("TermService", TimeSpan.FromSeconds(10));
+        logger.Log("TermService started", Logger.StateKind.Warning);
+      }
+      catch (Exception ex) {
+        var message = "Failed to update config: " + ex.Message;
+        logger.Log(message, Logger.StateKind.Error);
+        MessageBox.Show(message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+      }
     }
 
     private string ExtractResourceFile(string resourceName, string path, bool deleteExisting = false) {
@@ -494,21 +518,7 @@ namespace rdpWrapper {
     }
 
     private void btnGenerate_Click(object sender, EventArgs e) {
-      var newIniFile = GenerateIniFile(true);
-      if (newIniFile == null) return;
-      try {
-        ServiceHelper.StopService("TermService", TimeSpan.FromSeconds(10));
-        logger.Log("TermService stopped", Logger.StateKind.Info);
-        SafeDeleteFile(wrapperIniLastPath);
-        File.Move(newIniFile, wrapperIniLastPath);
-        ServiceHelper.StartService("TermService", TimeSpan.FromSeconds(10));
-        logger.Log("TermService started", Logger.StateKind.Info);
-      }
-      catch (Exception ex) {
-        var message = "Failed to update config: " + ex.Message;
-        logger.Log(message, Logger.StateKind.Error);
-        MessageBox.Show(message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
-      }
+      GenerateIniFile(wrapperIniLastPath);
     }
 
     private void AddToLog(string message, Logger.StateKind state, bool newLine) {
@@ -538,6 +548,99 @@ namespace rdpWrapper {
       //   File.AppendAllText(_logFileName, $"{DateTime.Now:T} - {message}\n");
       txtLog.ScrollToCaret();
       Application.DoEvents();
+    }
+
+    private bool SetWrapperDll(string wrapPath) {
+      RegistryKey reg = null;
+      logger.Log("Configuring service library...");
+      try {
+        var view = Environment.Is64BitProcess ? RegistryView.Registry64 : RegistryView.Registry32;
+        reg = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view).OpenSubKey(REG_TERMSERVICE_KEY + "\\Parameters", writable: true);
+
+        if (reg == null) {
+          var code = Marshal.GetLastWin32Error();
+          logger.Log($"OpenKey error (code {code}).", Logger.StateKind.Error, false);
+          return false;
+        }
+        reg.SetValue("ServiceDll", wrapPath, RegistryValueKind.ExpandString);
+        // if (Environment.Is64BitProcess && FV.Version.w.Major == 6 && FV.Version.w.Minor == 0) {
+        //   StartProcess("reg.exe",
+        //     $"add HKLM\\SYSTEM\\CurrentControlSet\\Services\\TermService\\Parameters /v ServiceDll /t REG_EXPAND_SZ /d \"{wrapPath}\" /f");
+        // }
+        logger.Log(" Done", Logger.StateKind.Info, false);
+        return true;
+      }
+      catch (UnauthorizedAccessException ex) {
+        logger.Log("WriteExpandString error: " + ex.Message, Logger.StateKind.Error, false);
+        return false; // ERROR_ACCESS_DENIED
+      }
+      finally {
+        reg?.Close();
+      }
+    }
+
+    private void btnInstall_Click(object sender, EventArgs e) {
+
+      try {
+        logger.Log("Extracting files...");
+        //string programFilesX86 = Environment.ExpandEnvironmentVariables("%ProgramFiles(x86)%");
+        var wrapperPath = Path.Combine(Environment.ExpandEnvironmentVariables("%ProgramW6432%"), "RDP Wrapper");
+        Directory.CreateDirectory(wrapperPath);
+        logger.Log("Folder created: " + wrapperPath);
+
+        var rdpWrap = ExtractResourceFile("rdpwrap.dll", wrapperPath);
+        logger.Log("Extracted rdpw64 -> " + rdpWrap);
+
+        if (!SetWrapperDll(rdpWrap))
+          return;
+        
+        GenerateIniFile(Path.Combine(wrapperPath, "rdpwrap.ini"));
+
+        //todo: Thread.Sleep(1000); 
+        cbxAllowTSConnections.Checked = true;
+        btnApply.PerformClick();
+      }
+      catch (Exception ex) {
+        var message = "Failed to Install: " + ex.Message;
+        logger.Log(message, Logger.StateKind.Error);
+        MessageBox.Show(message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+      }
+    }
+
+    private void btnUninstall_Click(object sender, EventArgs e) {
+      try {
+        logger.Log("Uninstalling...");
+        logger.Log("Resetting service library...");
+        using (var reg = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, Environment.Is64BitProcess ? RegistryView.Registry64 : RegistryView.Registry32).OpenSubKey(@"SYSTEM\CurrentControlSet\Services\TermService\Parameters", writable: true)) {
+          if (reg != null) {
+            reg.SetValue("ServiceDll", @"%SystemRoot%\System32\termsrv.dll", RegistryValueKind.ExpandString);
+          }
+          else {
+            logger.Log($"OpenKey error (code {Marshal.GetLastWin32Error()}).");
+            return;
+          }
+        }
+
+        logger.Log("Terminating service...");
+        ServiceHelper.StopService("TermService", TimeSpan.FromSeconds(10));
+        logger.Log(" Done", Logger.StateKind.Info, false);
+
+        var wrapperPath = Path.Combine(Environment.ExpandEnvironmentVariables("%ProgramW6432%"), "RDP Wrapper");
+        logger.Log("Removed folder: " + wrapperPath);
+        Directory.Delete(wrapperPath, true);
+
+        logger.Log("Starting TermService...");
+        ServiceHelper.StartService("TermService", TimeSpan.FromSeconds(10));
+        logger.Log(" Done", Logger.StateKind.Info, false);
+
+        cbxAllowTSConnections.Checked = false;
+        btnApply.PerformClick();
+      }
+      catch (Exception ex) {
+        var message = "Failed to Install: " + ex.Message;
+        logger.Log(message, Logger.StateKind.Error);
+        MessageBox.Show(message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+      }
     }
   }
 }
