@@ -43,6 +43,7 @@ namespace rdpWrapper {
     private bool wrapperIniLastSupported;
 
     private readonly string termSrvFile;
+    private readonly string wrapperFolderPath;
     private readonly Timer refreshTimer;
     private readonly Logger logger;
     private readonly ServiceHelper serviceHelper;
@@ -81,6 +82,8 @@ namespace rdpWrapper {
       Load += MainFormLoad;
 
       termSrvFile = Path.Combine(Environment.SystemDirectory, "termsrv.dll");
+      //string programFilesX86 = Environment.ExpandEnvironmentVariables("%ProgramFiles(x86)%");
+      wrapperFolderPath = Path.Combine(Environment.ExpandEnvironmentVariables("%ProgramW6432%"), "RDP Wrapper");
 
       refreshTimer = new Timer();
       refreshTimer.Tick += TimerTick;
@@ -562,54 +565,29 @@ namespace rdpWrapper {
       Application.DoEvents();
     }
 
-    private bool SetWrapperDll(string wrapPath) {
-      RegistryKey reg = null;
-      logger.Log("Configuring service library...");
-      try {
-        var view = Environment.Is64BitProcess ? RegistryView.Registry64 : RegistryView.Registry32;
-        reg = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view).OpenSubKey(REG_TERMSERVICE_KEY + "\\Parameters", writable: true);
-
-        if (reg == null) {
-          var code = Marshal.GetLastWin32Error();
-          logger.Log($"OpenKey error (code {code}).", Logger.StateKind.Error, false);
-          return false;
-        }
-        reg.SetValue("ServiceDll", wrapPath, RegistryValueKind.ExpandString);
-        // if (Environment.Is64BitProcess && FV.Version.w.Major == 6 && FV.Version.w.Minor == 0) {
-        //   StartProcess("reg.exe",
-        //     $"add HKLM\\SYSTEM\\CurrentControlSet\\Services\\TermService\\Parameters /v ServiceDll /t REG_EXPAND_SZ /d \"{wrapPath}\" /f");
-        // }
-        logger.Log(" Done", Logger.StateKind.Info, false);
-        return true;
-      }
-      catch (UnauthorizedAccessException ex) {
-        logger.Log("WriteExpandString error: " + ex.Message, Logger.StateKind.Error, false);
-        return false; // ERROR_ACCESS_DENIED
-      }
-      finally {
-        reg?.Close();
-      }
-    }
-
     private void btnInstall_Click(object sender, EventArgs e) {
 
       try {
         btnInstall.Enabled = false;
-        //string programFilesX86 = Environment.ExpandEnvironmentVariables("%ProgramFiles(x86)%");
-        var wrapperPath = Path.Combine(Environment.ExpandEnvironmentVariables("%ProgramW6432%"), "RDP Wrapper");
-        Directory.CreateDirectory(wrapperPath);
-        logger.Log("Folder created: " + wrapperPath);
-        AclHelper.GrantSidFullAccess(wrapperPath, "S-1-5-18", logger); // Local System account
-        AclHelper.GrantSidFullAccess(wrapperPath, "S-1-5-6", logger); // Service group
-        AclHelper.GrantSidFullAccess(wrapperPath, "S-1-5-32-545", logger); // SID for "Users"
+        Directory.CreateDirectory(wrapperFolderPath);
+        logger.Log("Folder created: " + wrapperFolderPath);
+        AclHelper.GrantSidFullAccess(wrapperFolderPath, "S-1-5-18", logger); // Local System account
+        AclHelper.GrantSidFullAccess(wrapperFolderPath, "S-1-5-6", logger); // Service group
+        AclHelper.GrantSidFullAccess(wrapperFolderPath, "S-1-5-32-545", logger); // SID for "Users"
 
-        var rdpWrap = ExtractResourceFile("rdpwrap.dll", wrapperPath);
+        var rdpWrap = ExtractResourceFile("rdpwrap.dll", wrapperFolderPath);
         logger.Log("Extracted rdpw64 -> " + rdpWrap);
 
-        if (!SetWrapperDll(rdpWrap))
+        logger.Log("Configuring service library...");
+        using var reg = Registry.LocalMachine.OpenSubKey(REG_TERMSERVICE_KEY + "\\Parameters", writable: true);
+        if (reg == null) {
+          logger.Log($"OpenKey error (code {Marshal.GetLastWin32Error()}).", Logger.StateKind.Error);
           return;
+        }
+        reg.SetValue("ServiceDll", rdpWrap, RegistryValueKind.ExpandString);
+        logger.Log(" Done", Logger.StateKind.Info, false);
 
-        GenerateIniFile(Path.Combine(wrapperPath, "rdpwrap.ini"));
+        GenerateIniFile(Path.Combine(wrapperFolderPath, "rdpwrap.ini"));
 
         //todo: Thread.Sleep(1000); 
         cbxAllowTSConnections.Checked = true;
@@ -628,28 +606,22 @@ namespace rdpWrapper {
     private void btnUninstall_Click(object sender, EventArgs e) {
       try {
         btnUninstall.Enabled = false;
-        logger.Log("Uninstalling...");
         logger.Log("Resetting service library...");
-        using (var reg = RegistryKey
-                 .OpenBaseKey(RegistryHive.LocalMachine,
-                   Environment.Is64BitProcess ? RegistryView.Registry64 : RegistryView.Registry32)
-                 .OpenSubKey(@"SYSTEM\CurrentControlSet\Services\TermService\Parameters", writable: true)) {
-          if (reg != null) {
-            reg.SetValue("ServiceDll", @"%SystemRoot%\System32\termsrv.dll", RegistryValueKind.ExpandString);
-          }
-          else {
-            logger.Log($"OpenKey error (code {Marshal.GetLastWin32Error()}).");
-            return;
-          }
+        using var reg = Registry.LocalMachine.OpenSubKey(REG_TERMSERVICE_KEY + "\\Parameters", writable: true);
+        if (reg == null) {
+          var code = Marshal.GetLastWin32Error();
+          logger.Log($"OpenKey error (code {Marshal.GetLastWin32Error()}).", Logger.StateKind.Error);
+          return;
         }
+        reg.SetValue("ServiceDll", @"%SystemRoot%\System32\termsrv.dll", RegistryValueKind.ExpandString);
+        logger.Log(" Done", Logger.StateKind.Info, false);
 
         var serviceState = serviceHelper.GetServiceState(RDP_SERVICE_NAME); 
         if (serviceState.HasValue && serviceState == ServiceControllerStatus.Running)
           serviceHelper.StopService(RDP_SERVICE_NAME, TimeSpan.FromSeconds(10));
 
-        var wrapperPath = Path.Combine(Environment.ExpandEnvironmentVariables("%ProgramW6432%"), "RDP Wrapper");
-        logger.Log("Removed folder: " + wrapperPath);
-        Directory.Delete(wrapperPath, true);
+        logger.Log("Removed folder: " + wrapperFolderPath);
+        Directory.Delete(wrapperFolderPath, true);
 
         if (serviceState.HasValue)
           serviceHelper.StartService(RDP_SERVICE_NAME, TimeSpan.FromSeconds(10));
