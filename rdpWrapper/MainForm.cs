@@ -599,6 +599,9 @@ namespace rdpWrapper {
         var wrapperPath = Path.Combine(Environment.ExpandEnvironmentVariables("%ProgramW6432%"), "RDP Wrapper");
         Directory.CreateDirectory(wrapperPath);
         logger.Log("Folder created: " + wrapperPath);
+        AclHelper.GrantSidFullAccess(wrapperPath, "S-1-5-18", logger); // Local System account
+        AclHelper.GrantSidFullAccess(wrapperPath, "S-1-5-6", logger); // Service group
+        AclHelper.GrantSidFullAccess(wrapperPath, "S-1-5-32-545", logger); // SID for "Users"
 
         var rdpWrap = ExtractResourceFile("rdpwrap.dll", wrapperPath);
         logger.Log("Extracted rdpw64 -> " + rdpWrap);
