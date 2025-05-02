@@ -23,6 +23,10 @@ However it is written in pure .NET instead of Pascal/Delphi.
 The main idea was to create small and portable single-file application with all required functionality.
 And yes, it can auto-generate offsets for new/updated Windows versions - thanks to the [llccd's RDPWrapOffsetFinder project](https://github.com/llccd/RDPWrapOffsetFinder).
 
+RDP Wrapper works as a layer between Service Control Manager and Terminal Services, so the original termsrv.dll file remains untouched. Also this method is very strong against Windows Update.
+
+It's recommended to have original termsrv.dll file with the RDP Wrapper installation. If you have modified it before with other patchers, it may become unstable and crash in any moment.
+
 ### What can it do?
 
 The application is portable and has the following features:
@@ -35,6 +39,8 @@ The application is portable and has the following features:
  - install / uninstall wrapper
  - generate config for not supported OS (after windows update) - make sure you have [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#visual-studio-2015-2017-2019-and-2022) installed
  - check for app updates (from main window system menu)
+ - Console and RDP session shadowing (using [Task Manager in Windows 7](http://cdn.freshdesk.com/data/helpdesk/attachments/production/1009641577/original/remote_control.png?1413476051) and lower, and [Remote Desktop Connection in Windows 8](http://woshub.com/rds-shadow-how-to-connect-to-a-user-session-in-windows-server-2012-r2/) and higher)
+ - Windows 2000, XP and Server 2003 are not supported
 
 ### Preview of the application UI
 
