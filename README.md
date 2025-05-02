@@ -20,6 +20,20 @@ Support the Armed Forces of Ukraine and People Affected by Russia’s Aggression
 
 This tool is inspired by the [stascorp's rdpwrap project](https://github.com/stascorp/rdpwrap), however it is written in pure .NET instead of Pascal/Delphi, and it can auto-generate configuration for new windows versions.
 
+### What can it do?
+
+The application is portable and has the following features:
+ - show RDP service current status
+ - configure RDP options
+ - install / uninstall wrapper
+ - generate config for not supported OS (after windows update)
+ - check for app updates (from main window system menu)
+
+### Preview of the application UI
+
+[<img src="https://github.com/sergiye/rdpWrapper/raw/master/preview.png" alt="Themes" width="300"/>](https://github.com/sergiye/rdpWrapper/releases)
+
+
 ## Download
 
 **The recommended way to get the program is BUILD from source**
