@@ -182,7 +182,7 @@ namespace rdpWrapper {
           if (key != null) {
             key.SetValue(VALUE_SINGLE_SESSION, cbxSingleSessionPerUser.Checked ? 1 : 0, RegistryValueKind.DWord);
             key.SetValue(VALUE_DENY_TS_CONNECTIONS, cbxAllowTSConnections.Checked ? 0 : 1, RegistryValueKind.DWord);
-            key.SetValue(VALUE_HONORLEGACY, cbxHonorLegacy.Checked ? 0 : 1, RegistryValueKind.DWord);
+            key.SetValue(VALUE_HONORLEGACY, cbxHonorLegacy.Checked ? 1 : 0, RegistryValueKind.DWord);
           }
         }
 
@@ -301,7 +301,7 @@ namespace rdpWrapper {
     }
 
     private static string GetVersionString(FileVersionInfo versionInfo) {
-      return versionInfo.FileMajorPart + "." + versionInfo.FileMinorPart + "." + versionInfo.FileBuildPart + "." + versionInfo.FilePrivatePart;
+      return versionInfo.ProductMajorPart + "." + versionInfo.ProductMinorPart + "." + versionInfo.ProductBuildPart + "." + versionInfo.ProductPrivatePart;
     }
 
     private void TimerTick(object sender, EventArgs e) {

@@ -177,6 +177,7 @@ namespace rdpWrapper {
       this.cbxHonorLegacy.Size = new System.Drawing.Size(169, 17);
       this.cbxHonorLegacy.TabIndex = 3;
       this.cbxHonorLegacy.Text = "Allow to start custom programs";
+      this.cbxHonorLegacy.CheckedChanged += new System.EventHandler(this.OnChanged);
       // 
       // panActions
       // 
