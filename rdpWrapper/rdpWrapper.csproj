@@ -51,4 +51,7 @@
     <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Web.Extensions" />
   </ItemGroup>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition=" '$(Configuration)' == 'Release'">
+    <Exec Command="for %%f in ($(OutDir)\*) do if not %%~xf==.exe del /S /Q &quot;%%f&quot;" />
+  </Target>
 </Project>
