@@ -42,7 +42,9 @@ The application is portable and has the following features:
  - Console and RDP session shadowing (using [Task Manager in Windows 7](http://cdn.freshdesk.com/data/helpdesk/attachments/production/1009641577/original/remote_control.png?1413476051) and lower, and [Remote Desktop Connection in Windows 8](http://woshub.com/rds-shadow-how-to-connect-to-a-user-session-in-windows-server-2012-r2/) and higher)
  - Windows 2000, XP and Server 2003 are not supported
 
-### Preview of the application UI
+### What does it look like?
+
+Here's a preview of the app's UI running on Windows 10:
 
 [<img src="https://github.com/sergiye/rdpWrapper/raw/master/preview.png" alt="Themes" width="300"/>](https://raw.githubusercontent.com/sergiye/rdpWrapper/master/preview.png)
 
@@ -59,6 +61,8 @@ The application is portable and has the following features:
 ## How can I help improve it?
 The rdpWrapper team welcomes feedback and contributions!<br/>
 You can check if it works properly on your PC. If you notice any inaccuracies, please send us a pull request. If you have any suggestions or improvements, don't hesitate to create an issue.
+
+Also, don't forget to star the repository to help other people find it.
 
 ## License
 
