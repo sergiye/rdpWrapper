@@ -93,15 +93,13 @@ namespace rdpWrapper {
       refreshTimer.Tick += TimerTick;
       refreshTimer.Interval = 1000;
 
-#if !DEBUG
       var timer = new Timer();
-      timer.Tick += (_, _) => {
+      timer.Tick += async (_, _) => {
         timer.Enabled = false;
-        timer.Enabled = !Updater.CheckForUpdates(true);
+        timer.Enabled = !await Updater.CheckForUpdatesAsync(true).ConfigureAwait(false);
       };
       timer.Interval = 3000;
       timer.Enabled = true;
-#endif
     }
 
     [DllImport("user32.dll")]

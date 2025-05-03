@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Threading.Tasks;
 #if !NOWINFORMS
 using System.Windows.Forms;
 #endif
@@ -59,55 +60,22 @@ namespace sergiye.Common {
       return null;
     }
 
+    private static string GetAppReleasesUrl() {
+      return $"https://api.github.com/repos/sergiye/{ApplicationName}/releases";
+    }
+    
     /// <summary>
     /// Check for a new version
     /// </summary>
     /// <returns>True if the check was completed, False if there were errors</returns>
     internal static bool CheckForUpdates(bool silent) {
-      string newVersion;
-      string newVersionUrl = null;
       try {
         string jsonString;
         using (var wc = new WebClient()) {
           wc.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 11.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.500.27 Safari/537.36");
-          jsonString = wc.DownloadString($"https://api.github.com/repos/sergiye/{ApplicationName}/releases").TrimEnd();
+          jsonString = wc.DownloadString(GetAppReleasesUrl()); // .TrimEnd();
         }
-        var releases = jsonString.FromJson<GitHubRelease[]>();
-        if (releases == null || releases.Length == 0)
-          throw new Exception("Error getting list of releases.");
-
-        var lastRelease = releases.FirstOrDefault(r => !r.Prerelease) ?? releases[0];
-        newVersion = lastRelease.Tag_name;
-        var asset = lastRelease.Assets.FirstOrDefault(a => a.Name == selfFileName);
-        newVersionUrl = asset?.Browser_download_url;
-        if (string.IsNullOrEmpty(newVersionUrl)) {
-          if (!silent)
-#if NOWINFORMS
-            Console.WriteLine($"Your version is: {CurrentVersion}\nLatest released version is: {newVersion}\nNo assets found to update.");
-#else
-            MessageBox.Show($"Your version is: {CurrentVersion}\nLatest released version is: {newVersion}\nNo assets found to update.", ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-#endif
-          return true;
-        }
-
-        if (string.Compare(CurrentVersion, newVersion, StringComparison.Ordinal) >= 0) {
-          if (!silent)
-#if NOWINFORMS
-            Console.WriteLine($"Your version: {CurrentVersion}\nLast release: {newVersion}\nNo need to update.");
-#else
-            MessageBox.Show($"Your version: {CurrentVersion}\nLast release: {newVersion}\nNo need to update.", ApplicationName, MessageBoxButtons.OK,
-              MessageBoxIcon.Information);
-#endif
-          return true;
-        }
-#if NOWINFORMS
-        Console.WriteLine($"New version found: {newVersion}, app will be updated after close.");
-#else
-        if (MessageBox.Show($"Your version: {CurrentVersion}\nLast release: {newVersion}\nDownload this update?",
-          ApplicationName, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) {
-          return true;
-        }
-#endif
+        return CheckForUpdatesInternal(silent, jsonString);
       }
       catch (Exception ex) {
         if (!silent)
@@ -118,6 +86,69 @@ namespace sergiye.Common {
 #endif
         return false;
       }
+    }
+
+    /// <summary>
+    /// Check for a new version
+    /// </summary>
+    /// <returns>True if the check was completed, False if there were errors</returns>
+    internal static async Task<bool> CheckForUpdatesAsync(bool silent) {
+      try {
+        string jsonString;
+        using (var wc = new WebClient()) {
+          wc.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 11.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.500.27 Safari/537.36");
+          jsonString = await wc.DownloadStringTaskAsync(GetAppReleasesUrl()).ConfigureAwait(false);
+        }
+        return CheckForUpdatesInternal(silent, jsonString);
+      }
+      catch (Exception ex) {
+        if (!silent)
+#if NOWINFORMS
+          Console.WriteLine($"Error checking for a new version.\n{ex.Message}");
+#else
+          MessageBox.Show($"Error checking for a new version.\n{ex.Message}", ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+#endif
+        return false;
+      }
+    }
+
+    private static bool CheckForUpdatesInternal(bool silent, string jsonString) {
+      var releases = jsonString.FromJson<GitHubRelease[]>();
+      if (releases == null || releases.Length == 0)
+        throw new Exception("Error getting list of releases.");
+
+      var lastRelease = releases.FirstOrDefault(r => !r.Prerelease) ?? releases[0];
+      var newVersion = lastRelease.Tag_name;
+      var asset = lastRelease.Assets.FirstOrDefault(a => a.Name == selfFileName);
+      var newVersionUrl = asset?.Browser_download_url;
+      if (string.IsNullOrEmpty(newVersionUrl)) {
+        if (!silent)
+#if NOWINFORMS
+          Console.WriteLine($"Your version is: {CurrentVersion}\nLatest released version is: {newVersion}\nNo assets found to update.");
+#else
+          MessageBox.Show($"Your version is: {CurrentVersion}\nLatest released version is: {newVersion}\nNo assets found to update.", ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+#endif
+        return true;
+      }
+
+      if (string.Compare(CurrentVersion, newVersion, StringComparison.Ordinal) >= 0) {
+        if (!silent)
+#if NOWINFORMS
+          Console.WriteLine($"Your version: {CurrentVersion}\nLast release: {newVersion}\nNo need to update.");
+#else
+          MessageBox.Show($"Your version: {CurrentVersion}\nLast release: {newVersion}\nNo need to update.", ApplicationName, MessageBoxButtons.OK,
+            MessageBoxIcon.Information);
+#endif
+        return true;
+      }
+#if NOWINFORMS
+      Console.WriteLine($"New version found: {newVersion}, app will be updated after close.");
+#else
+      if (MessageBox.Show($"Your version: {CurrentVersion}\nLast release: {newVersion}\nDownload this update?",
+        ApplicationName, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) {
+        return true;
+      }
+#endif
 
       try {
         var tempPath = Path.GetTempPath();
