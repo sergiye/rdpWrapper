@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace rdpWrapper {
+namespace sergiye.Common {
 
   internal static class WinStationHelper {
     private const string WINSTADLL = "winsta.dll";

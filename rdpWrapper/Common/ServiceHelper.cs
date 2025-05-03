@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ServiceProcess;
 
-namespace rdpWrapper {
+namespace sergiye.Common {
 
   internal class ServiceHelper {
 

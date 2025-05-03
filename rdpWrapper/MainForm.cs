@@ -57,11 +57,12 @@ namespace rdpWrapper {
       InitializeComponent();
 
       Icon = Icon.ExtractAssociatedIcon(typeof(MainForm).Assembly.Location);
-      Text = $"{Updater.ApplicationTitle} v{Updater.CurrentVersion} {(Environment.Is64BitProcess ? "x64" : "x86")}";
+      var title =$"{Updater.ApplicationTitle} v{Updater.CurrentVersion} {(Environment.Is64BitProcess ? "x64" : "x86")}";
+      Text = title;
 
       logger = new Logger();
       logger.OnNewLogEvent += AddToLog;
-      logger.Log($"Application started: {Text}", Logger.StateKind.Info, false);
+      logger.Log($"Application started: {title}", Logger.StateKind.Info, false);
 
       serviceHelper = new ServiceHelper(logger);
       
@@ -163,7 +164,7 @@ namespace rdpWrapper {
             cbDontDisplayLastUser.Checked = Convert.ToInt32(key.GetValue(ValueDontDisplayLastUserName, 0)) != 0;
         }
 
-        logger.Log(" Completed", Logger.StateKind.Info, false);
+        logger.Log(" Done", Logger.StateKind.Info, false);
         TimerTick(null, EventArgs.Empty);
         refreshTimer.Enabled = true;
       }
@@ -337,8 +338,14 @@ namespace rdpWrapper {
         case 1:
           lblWrapperStateValue.Text = "Installed";
           lblWrapperStateValue.ForeColor = Color.DarkGreen;
-          var wrapperIniPath = Path.Combine(Path.GetDirectoryName(wrapperPath), RdpWrapIniName);
-          checkSupported = File.Exists(wrapperIniPath);
+          string wrapperIniPath = null;
+          if (!string.IsNullOrEmpty(wrapperPath)) {
+            var wrappedDir = Path.GetDirectoryName(wrapperPath);
+            if (wrappedDir != null) {
+              wrapperIniPath = Path.Combine(wrappedDir, RdpWrapIniName);
+              checkSupported = File.Exists(wrapperIniPath);
+            }
+          }
           if (wrapperIniPath != wrapperIniLastPath) {
             wrapperIniLastPath = wrapperIniPath;
             wrapperIniLastChecked = DateTime.MinValue;
@@ -591,7 +598,7 @@ namespace rdpWrapper {
         ] , FileSystemRights.FullControl, AccessControlType.Allow);
 
         var rdpWrap = ExtractResourceFile(RdpWrapDllName, wrapperFolderPath);
-        logger.Log("Extracted rdpw64 -> " + rdpWrap);
+        logger.Log("Extracted rdpWrap.dll -> " + rdpWrap);
 
         logger.Log("Configuring service library...");
         using var reg = Registry.LocalMachine.OpenSubKey(RegTermServiceKey + "\\Parameters", writable: true);
@@ -624,7 +631,6 @@ namespace rdpWrapper {
         logger.Log("Resetting service library...");
         using var reg = Registry.LocalMachine.OpenSubKey(RegTermServiceKey + "\\Parameters", writable: true);
         if (reg == null) {
-          var code = Marshal.GetLastWin32Error();
           logger.Log($"OpenKey error (code {Marshal.GetLastWin32Error()}).", Logger.StateKind.Error);
           return;
         }
