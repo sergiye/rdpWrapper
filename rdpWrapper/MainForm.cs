@@ -6,6 +6,7 @@ using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
+using System.Security.Principal;
 using System.ServiceProcess;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
@@ -568,15 +569,28 @@ namespace rdpWrapper {
       Application.DoEvents();
     }
 
+    private static void AddDirectorySecurity(string fileName, string[] sids, FileSystemRights rights, AccessControlType controlType) {
+      var dInfo = new DirectoryInfo(fileName);
+      var dSecurity = dInfo.GetAccessControl();
+      foreach(var sid in sids) {
+        var sIdentifier = new SecurityIdentifier(sid);
+        dSecurity.AddAccessRule(new FileSystemAccessRule(sIdentifier, rights, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, controlType));
+      }
+      dInfo.SetAccessControl(dSecurity);
+    }
+
     private void btnInstall_Click(object sender, EventArgs e) {
 
       try {
         btnInstall.Enabled = false;
         Directory.CreateDirectory(wrapperFolderPath);
         logger.Log("Folder created: " + wrapperFolderPath);
-        AclHelper.GrantSidFullAccess(wrapperFolderPath, "S-1-5-18", logger); // Local System account
-        AclHelper.GrantSidFullAccess(wrapperFolderPath, "S-1-5-6", logger); // Service group
-        AclHelper.GrantSidFullAccess(wrapperFolderPath, "S-1-5-32-545", logger); // SID for "Users"
+
+        AddDirectorySecurity(wrapperFolderPath, [
+          "S-1-5-18", // Local System account
+          "S-1-5-6", // Service group
+          "S-1-5-32-545", // SID for "Users"
+        ] , FileSystemRights.FullControl, AccessControlType.Allow);
 
         var rdpWrap = ExtractResourceFile(RdpWrapDllName, wrapperFolderPath);
         logger.Log("Extracted rdpw64 -> " + rdpWrap);
