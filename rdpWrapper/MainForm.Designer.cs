@@ -64,7 +64,7 @@ namespace rdpWrapper {
       this.btnClose.Size = new System.Drawing.Size(67, 23);
       this.btnClose.TabIndex = 2;
       this.btnClose.Text = "Close";
-      this.btnClose.Click += new System.EventHandler(this.BtnCloseClick);
+      this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
       // 
       // btnApply
       // 
