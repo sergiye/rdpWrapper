@@ -42,19 +42,4 @@ Here's a preview of the app's UI running on Windows 10:
 
 ## Download
 
-**The recommended way to get the program is BUILD from source**
-- Install git, Visual Studio
-- `git clone https://github.com/sergiye/rdpWrapper.git`
-- build
-
-**or download build from [releases](https://github.com/sergiye/rdpWrapper/releases).**
-
-## How can I help improve it?
-The rdpWrapper team welcomes feedback and contributions!<br/>
-You can check if it works properly on your PC. If you notice any inaccuracies, please send us a pull request. If you have any suggestions or improvements, don't hesitate to create an issue.
-
-Also, don't forget to star the repository to help other people find it.
-
-## License
-
-RDP Wrapper is free and open source software licensed under GNU General Public License, Version 3 [GNU 3.0](https://www.gnu.org/licenses/gpl-3.0.html). You can use it for personal and commercial purposes.
+project development was moved to [rdp-wrapper](https://github.com/rdp-wrapper/rdpWrapper) please check for all new updates there
