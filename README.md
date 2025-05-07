@@ -5,6 +5,10 @@
 
 ----
 
+## ! WARNING !
+project was moved to [rdp-wrapper](https://github.com/rdp-wrapper/rdpWrapper) please check for all new updates there
+
+
 ## Overview
 
 `RDP Wrapper` is a RDP setup and configuration utility
@@ -38,8 +42,3 @@ The application is portable and has the following features:
 Here's a preview of the app's UI running on Windows 10:
 
 [<img src="https://github.com/sergiye/rdpWrapper/raw/master/preview.png" alt="Themes" width="300"/>](https://raw.githubusercontent.com/sergiye/rdpWrapper/master/preview.png)
-
-
-## Download
-
-project development was moved to [rdp-wrapper](https://github.com/rdp-wrapper/rdpWrapper) please check for all new updates there
