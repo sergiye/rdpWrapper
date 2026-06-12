@@ -580,6 +580,24 @@ namespace rdpWrapper {
         fi.Delete();
       }
     }
+
+    public void DecryptResources() {
+      var externalsPath = Path.Combine(Path.GetDirectoryName(Updater.CurrentFileLocation), "../externals");
+      var di = new DirectoryInfo(externalsPath);
+      if (!di.Exists)
+        return;
+
+      foreach (var fi in di.EnumerateFiles("*.*", SearchOption.AllDirectories)) {
+        if (fi.Extension != ".cr") continue;
+        var newFileName = fi.FullName.Substring(0, fi.FullName.Length - 3);
+        using (var inputFileStream = File.OpenRead(fi.FullName))
+        using (var outputFileStream = File.Create(newFileName))
+        using (var cryptoStream = new CryptoStream(inputFileStream, aes.CreateDecryptor(), CryptoStreamMode.Read))
+        using (var gzipStream = new GZipStream(cryptoStream, CompressionMode.Decompress))
+          gzipStream.CopyTo(outputFileStream);
+        //fi.Delete();
+      }
+    }
 #endif
 
     private string ExtractResourceFile(string resourceName, string path, bool deleteExisting = false, bool archPrefix = false) {

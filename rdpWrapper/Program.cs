@@ -34,6 +34,7 @@ namespace rdpWrapper {
       Crasher.Listen();
 
       // new Wrapper(new FileLogger()).EncryptResources();
+      // new Wrapper(new FileLogger()).DecryptResources();
       // return;
 
       var consoleMode = args.Length > 0;
