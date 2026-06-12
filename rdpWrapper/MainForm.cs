@@ -563,6 +563,56 @@ namespace rdpWrapper {
       }
     }
 
+    private void patchTermsrvMenuItem_Click(object sender, EventArgs e) {
+      if (MessageBox.Show(
+            "This will patch C:\\Windows\\System32\\termsrv.dll for the 10.0.26100.8521 byte pattern and restart TermService. Continue?",
+            Updater.ApplicationTitle,
+            MessageBoxButtons.OKCancel,
+            MessageBoxIcon.Warning) != DialogResult.OK) {
+        return;
+      }
+
+      try {
+        SetControlsState(false);
+        var result = wrapper.ApplyTermsrvPatch26100_8521();
+        logger.Log(result, Logger.StateKind.Info);
+        MessageBox.Show(result, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+      }
+      catch (Exception ex) {
+        var message = "Failed to patch termsrv.dll: " + ex.Message;
+        logger.Log(message, Logger.StateKind.Error);
+        MessageBox.Show(message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+      }
+      finally {
+        SetControlsState(true);
+      }
+    }
+
+    private void restoreTermsrvMenuItem_Click(object sender, EventArgs e) {
+      if (MessageBox.Show(
+            "This will restore the latest backed up termsrv.dll and restart TermService. Continue?",
+            Updater.ApplicationTitle,
+            MessageBoxButtons.OKCancel,
+            MessageBoxIcon.Warning) != DialogResult.OK) {
+        return;
+      }
+
+      try {
+        SetControlsState(false);
+        var result = wrapper.RestoreTermsrvPatch26100_8521();
+        logger.Log(result, Logger.StateKind.Info);
+        MessageBox.Show(result, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+      }
+      catch (Exception ex) {
+        var message = "Failed to restore termsrv.dll: " + ex.Message;
+        logger.Log(message, Logger.StateKind.Error);
+        MessageBox.Show(message, Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+      }
+      finally {
+        SetControlsState(true);
+      }
+    }
+
     private void btnEditWrapIni_Click(object sender, EventArgs e) {
       try {
         SetControlsState(false);
@@ -641,6 +691,7 @@ namespace rdpWrapper {
         btnInstall.Enabled = installMenuItem.Enabled = uninstallMenuItem.Enabled = false;
         editWrapIniMenuItem.Enabled = btnGenerate.Enabled = generateMenuItem.Enabled = false;
       }
+      patchTermsrvMenuItem.Enabled = restoreTermsrvMenuItem.Enabled = enabled;
       btnRestartService.Enabled = restartServiceMenuItem.Enabled = enabled;
     }
 

@@ -61,6 +61,7 @@ namespace rdpWrapper {
     private const string UmWrapDllName = "UmWrap.dll";
     private const string EndpWrapDllName = "EndpWrap.dll";
     private const string ZydisDllName = "Zydis.dll";
+    private const int TermsrvPatch26100_8521Offset = 0x9C547;
 
     private readonly Logger logger;
     private readonly ServiceHelper serviceHelper;
@@ -401,6 +402,116 @@ namespace rdpWrapper {
 
     internal ServiceControllerStatus? GetServiceState() {
       return serviceHelper.GetState(RdpServiceName);
+    }
+
+    #endregion
+
+    #region termsrv.dll patching
+
+    internal string ApplyTermsrvPatch26100_8521() {
+      return PatchTermsrv26100_8521(applyPatch: true);
+    }
+
+    internal string RestoreTermsrvPatch26100_8521() {
+      var backupPath = GetLatestTermsrvBackup();
+      if (backupPath.IsNullOrEmpty())
+        throw new FileNotFoundException("No termsrv.dll backup was found.");
+
+      ReplaceTermsrvFile(backupPath);
+      return "Restored termsrv.dll from: " + backupPath;
+    }
+
+    private string PatchTermsrv26100_8521(bool applyPatch) {
+      var bytes = File.ReadAllBytes(TermSrvFile);
+      var patchOffset = FindTermsrvPatchOffset(bytes);
+      var currentByte = bytes[patchOffset];
+      if (currentByte == 0xEB)
+        return "termsrv.dll is already patched at 0x9C547.";
+      if (currentByte != 0x75)
+        throw new InvalidOperationException($"Unexpected byte at 0x9C547: 0x{currentByte:X2}.");
+
+      if (!applyPatch)
+        return "termsrv.dll can be patched at 0x9C547.";
+
+      Directory.CreateDirectory(WrapperFolderPath);
+      var backupDir = Path.Combine(WrapperFolderPath, "termsrv-backups");
+      Directory.CreateDirectory(backupDir);
+
+      var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+      var backupPath = Path.Combine(backupDir, $"termsrv.dll.{stamp}.original");
+      var patchedPath = Path.Combine(backupDir, $"termsrv.dll.{stamp}.patched");
+
+      File.Copy(TermSrvFile, backupPath, overwrite: false);
+      bytes[patchOffset] = 0xEB;
+      File.WriteAllBytes(patchedPath, bytes);
+
+      ReplaceTermsrvFile(patchedPath);
+      return $"Patched termsrv.dll at 0x9C547. Original backup: {backupPath}";
+    }
+
+    private static int FindTermsrvPatchOffset(byte[] bytes) {
+      var patternPrefix = new byte[] { 0x8B, 0x8F, 0x38, 0x06, 0x00, 0x00, 0x45, 0x3B, 0xC1 };
+      var matches = 0;
+      var matchOffset = -1;
+
+      for (var i = 0; i <= bytes.Length - patternPrefix.Length - 1; i++) {
+        var ok = true;
+        for (var j = 0; j < patternPrefix.Length; j++) {
+          if (bytes[i + j] == patternPrefix[j]) continue;
+          ok = false;
+          break;
+        }
+
+        if (!ok) continue;
+        matches++;
+        matchOffset = i;
+      }
+
+      if (matches != 1)
+        throw new InvalidOperationException($"Expected one termsrv.dll patch pattern match, found {matches}.");
+
+      var patchOffset = matchOffset + patternPrefix.Length;
+      if (patchOffset != TermsrvPatch26100_8521Offset)
+        throw new InvalidOperationException($"Patch offset mismatch: 0x{patchOffset:X}, expected 0x{TermsrvPatch26100_8521Offset:X}.");
+
+      return patchOffset;
+    }
+
+    private void ReplaceTermsrvFile(string sourceFilePath) {
+      var serviceState = serviceHelper.GetState(RdpServiceName);
+      if (serviceState is ServiceControllerStatus.Running)
+        serviceHelper.Stop(RdpServiceName, TimeSpan.FromSeconds(10));
+
+      try {
+        RunSystemTool("takeown.exe", $"/F \"{TermSrvFile}\"");
+        RunSystemTool("icacls.exe", $"\"{TermSrvFile}\" /grant *S-1-5-32-544:F");
+
+        File.Copy(sourceFilePath, TermSrvFile, overwrite: true);
+
+        RunSystemTool("icacls.exe", $"\"{TermSrvFile}\" /setowner \"NT SERVICE\\TrustedInstaller\"");
+      }
+      finally {
+        if (serviceState is ServiceControllerStatus.Running)
+          serviceHelper.Start(RdpServiceName, TimeSpan.FromSeconds(10));
+      }
+    }
+
+    private static void RunSystemTool(string app, string arguments) {
+      using var process = StartProcess(app, arguments);
+      process.WaitForExit();
+      if (process.ExitCode != 0)
+        throw new InvalidOperationException($"{app} failed with exit code {process.ExitCode}.");
+    }
+
+    private string GetLatestTermsrvBackup() {
+      var backupDir = Path.Combine(WrapperFolderPath, "termsrv-backups");
+      if (!Directory.Exists(backupDir))
+        return null;
+
+      return Directory
+        .EnumerateFiles(backupDir, "termsrv.dll.*.original")
+        .OrderByDescending(File.GetLastWriteTime)
+        .FirstOrDefault();
     }
 
     #endregion

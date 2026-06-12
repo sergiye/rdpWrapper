@@ -61,6 +61,8 @@ namespace rdpWrapper {
       this.uninstallMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.restartServiceMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.generateMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      this.patchTermsrvMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      this.restoreTermsrvMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.toolStripMenuItem3 = new System.Windows.Forms.ToolStripSeparator();
       this.addUserToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.fixMSUserMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -499,6 +501,8 @@ namespace rdpWrapper {
             this.uninstallMenuItem,
             this.restartServiceMenuItem,
             this.generateMenuItem,
+            this.patchTermsrvMenuItem,
+            this.restoreTermsrvMenuItem,
             this.toolStripMenuItem3,
             this.addUserToolStripMenuItem,
             this.fixMSUserMenuItem,
@@ -535,6 +539,20 @@ namespace rdpWrapper {
       this.generateMenuItem.Size = new System.Drawing.Size(251, 22);
       this.generateMenuItem.Text = "Generate \'wrap.ini\'";
       this.generateMenuItem.Click += new System.EventHandler(this.btnGenerate_Click);
+      //
+      // patchTermsrvMenuItem
+      //
+      this.patchTermsrvMenuItem.Name = "patchTermsrvMenuItem";
+      this.patchTermsrvMenuItem.Size = new System.Drawing.Size(251, 22);
+      this.patchTermsrvMenuItem.Text = "Patch termsrv.dll 26100.8521";
+      this.patchTermsrvMenuItem.Click += new System.EventHandler(this.patchTermsrvMenuItem_Click);
+      //
+      // restoreTermsrvMenuItem
+      //
+      this.restoreTermsrvMenuItem.Name = "restoreTermsrvMenuItem";
+      this.restoreTermsrvMenuItem.Size = new System.Drawing.Size(251, 22);
+      this.restoreTermsrvMenuItem.Text = "Restore termsrv.dll backup";
+      this.restoreTermsrvMenuItem.Click += new System.EventHandler(this.restoreTermsrvMenuItem_Click);
       // 
       // toolStripMenuItem3
       // 
@@ -755,6 +773,8 @@ namespace rdpWrapper {
     private ToolStripMenuItem installMenuItem;
     private ToolStripMenuItem uninstallMenuItem;
     private ToolStripMenuItem generateMenuItem;
+    private ToolStripMenuItem patchTermsrvMenuItem;
+    private ToolStripMenuItem restoreTermsrvMenuItem;
     private ToolStripMenuItem editWrapIniMenuItem;
     private ToolStripMenuItem restartServiceMenuItem;
     private ToolStripMenuItem addUserToolStripMenuItem;

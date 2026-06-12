@@ -54,6 +54,7 @@ The application is portable and has the following features:
   - fix Microsoft account local cache ([#10](https://github.com/sergiye/rdpWrapper/issues/10))
   - configuring display/hide of [client security warnings](https://learn.microsoft.com/en-us/windows-server/remote/remote-desktop-services/remotepc/understanding-security-warnings)
   - configuring client USB device redirection restrictions
+  - optional guarded `termsrv.dll` patch helper for known builds where wrapper mode still leaves Windows restricted to one user
 
   and you can get full/lite/x64/x86 version of the application - the one that best suits your needs
 
@@ -117,6 +118,30 @@ Add-MpPreference -ExclusionPath "c:\Program Files\RDP Wrapper\"
 > If you are uncomfortable with this process, or if your antivirus is managed by your company, we advise against using RdpWrapper. Please consider alternative solutions instead.
 
 ## Notes
+
+### termsrv.dll patch helper
+
+RDP Wrapper normally keeps the original `termsrv.dll` untouched. For known
+Windows builds where wrapper mode still leaves Windows restricted to one user,
+the application also includes an optional guarded patch helper.
+
+For `termsrv.dll` x64 `10.0.26100.8521`, the helper validates that the expected
+byte pattern occurs exactly once, verifies the computed patch offset is
+`0x9C547`, and changes that byte from `75` to `EB`. It backs up the original
+file under `C:\Program Files\RDP Wrapper\termsrv-backups`, replaces the local
+system file, restores `TrustedInstaller` ownership, and restarts `TermService`
+if it was running.
+
+Usage:
+
+- UI: `Tools` -> `Patch termsrv.dll 26100.8521`
+- CLI: `rdpWrapper.exe -patchtermsrv`
+- Restore: `Tools` -> `Restore termsrv.dll backup`
+- Restore CLI: `rdpWrapper.exe -restoretermsrv`
+
+Do not use DLLs downloaded from third-party file sharing links. Patch only the
+local system file, and re-check after Windows updates because servicing may
+restore `termsrv.dll`.
 
 ### Enable USB redirection
 To enable remote desktop USB redirection, additional group policy settings are required (gpedit):

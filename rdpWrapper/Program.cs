@@ -91,7 +91,7 @@ namespace rdpWrapper {
         switch (args[0]) {
           case "-help":
             //todo: show help with supported options
-            logger.Log("Usage:\n -x \t start UI and no wait for exit;\n -generate \t generate Ini;\n -install \t install wrapper;\n -uninstall \t uninstall wrapper", Logger.StateKind.Info);
+            logger.Log("Usage:\n -x \t start UI and no wait for exit;\n -generate \t generate Ini;\n -install \t install wrapper;\n -uninstall \t uninstall wrapper;\n -patchtermsrv \t patch termsrv.dll for 10.0.26100.8521;\n -restoretermsrv \t restore latest termsrv.dll backup", Logger.StateKind.Info);
             break;
           case "-x":
             //start UI as a new separate process
@@ -132,6 +132,16 @@ namespace rdpWrapper {
           case "-stop": {
             var wrapper = new Wrapper(logger);
             wrapper.StopService(TimeSpan.FromSeconds(10));
+            break;
+          }
+          case "-patchtermsrv": {
+            var wrapper = new Wrapper(logger);
+            logger.Log(wrapper.ApplyTermsrvPatch26100_8521(), Logger.StateKind.Info);
+            break;
+          }
+          case "-restoretermsrv": {
+            var wrapper = new Wrapper(logger);
+            logger.Log(wrapper.RestoreTermsrvPatch26100_8521(), Logger.StateKind.Info);
             break;
           }
           default:
