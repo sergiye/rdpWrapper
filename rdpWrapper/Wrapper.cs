@@ -5,10 +5,8 @@ using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
-using System.Security.Cryptography;
 using System.Security.Principal;
 using System.ServiceProcess;
-using System.Text;
 using Microsoft.Win32;
 using sergiye.Common;
 
@@ -65,12 +63,10 @@ namespace rdpWrapper {
     private readonly Logger logger;
     private readonly ServiceHelper serviceHelper;
     private readonly RegistryView registryView = Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Registry32;
-    private readonly Aes aes;
 
     internal Wrapper(Logger logger) {
       this.logger = logger;
       serviceHelper = new ServiceHelper(logger);
-      aes = GetAes();
 
       WrapperFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "RDP Wrapper");
 
@@ -551,18 +547,6 @@ namespace rdpWrapper {
 
     #region supplementary methods
 
-    private static Aes GetAes() {
-      var aes = Aes.Create();
-      var salt = Encoding.UTF8.GetBytes(Updater.ApplicationTitle);
-      using (var keyDerivation = new Rfc2898DeriveBytes(Updater.ApplicationName, salt, 100_000, HashAlgorithmName.SHA256)) {
-        aes.Key = keyDerivation.GetBytes(32);
-        aes.IV = keyDerivation.GetBytes(16);
-      }
-      aes.Padding = PaddingMode.PKCS7;
-      aes.Mode = CipherMode.CBC;
-      return aes;
-    }
-
 #if DEBUG
     public void EncryptResources() {
       var externalsPath = Path.Combine(Path.GetDirectoryName(Updater.CurrentFileLocation), "../externals");
@@ -570,12 +554,11 @@ namespace rdpWrapper {
       if (!di.Exists)
         return;
       foreach (var fi in di.EnumerateFiles("*.*", SearchOption.AllDirectories)) {
-        if (fi.Extension == ".cr") continue;
-        var newFileName = fi.FullName + ".cr";
+        if (fi.Extension == ".gz") continue;
+        var newFileName = fi.FullName + ".gz";
         using (var inputFileStream = File.OpenRead(fi.FullName))
         using (var outputFileStream = File.Create(newFileName))
-        using (var cryptoStream = new CryptoStream(outputFileStream, aes.CreateEncryptor(), CryptoStreamMode.Write))
-        using (var gzipStream = new GZipStream(cryptoStream, CompressionMode.Compress))
+        using (var gzipStream = new GZipStream(outputFileStream, CompressionMode.Compress))
           inputFileStream.CopyTo(gzipStream);
         fi.Delete();
       }
@@ -588,12 +571,11 @@ namespace rdpWrapper {
         return;
 
       foreach (var fi in di.EnumerateFiles("*.*", SearchOption.AllDirectories)) {
-        if (fi.Extension != ".cr") continue;
+        if (fi.Extension != ".gz") continue;
         var newFileName = fi.FullName.Substring(0, fi.FullName.Length - 3);
         using (var inputFileStream = File.OpenRead(fi.FullName))
         using (var outputFileStream = File.Create(newFileName))
-        using (var cryptoStream = new CryptoStream(inputFileStream, aes.CreateDecryptor(), CryptoStreamMode.Read))
-        using (var gzipStream = new GZipStream(cryptoStream, CompressionMode.Decompress))
+        using (var gzipStream = new GZipStream(inputFileStream, CompressionMode.Decompress))
           gzipStream.CopyTo(outputFileStream);
         //fi.Delete();
       }
@@ -609,7 +591,7 @@ namespace rdpWrapper {
       }
       try {
         var type = typeof(SupportedWrappers);
-        resourceName += ".cr";
+        resourceName += ".gz";
         var scriptsPath = archPrefix
           ? $"{type.Namespace}.externals.{(Environment.Is64BitOperatingSystem ? "x64" : "x86")}.{resourceName}"
           : $"{type.Namespace}.externals.{resourceName}";
@@ -618,8 +600,7 @@ namespace rdpWrapper {
           throw new Exception($"Resource '{resourceName}' is not found!");
         using (var fileStream = File.Create(filePath)) {
           stream.Seek(0, SeekOrigin.Begin);
-          using (var cryptoStream = new CryptoStream(stream, aes.CreateDecryptor(), CryptoStreamMode.Read))
-          using (var gzipStream = new GZipStream(cryptoStream, CompressionMode.Decompress))
+          using (var gzipStream = new GZipStream(stream, CompressionMode.Decompress))
             gzipStream.CopyTo(fileStream);
         }
         return filePath;

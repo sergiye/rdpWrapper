@@ -90,36 +90,36 @@
     <IsLiteVersion Condition=" '$(DefineConstants)' != '' and  '$(DefineConstants)' != '$(DefineConstants.Replace(`LITEVERSION`,``))' ">true</IsLiteVersion>
   </PropertyGroup>
   <ItemGroup Condition=" '$(IsLiteVersion)' != 'true'">
-    <None Remove="externals\rdpwrap.ini.cr" />
-    <EmbeddedResource Include="externals\rdpwrap.ini.cr" />
+    <None Remove="externals\rdpwrap.ini.gz" />
+    <EmbeddedResource Include="externals\rdpwrap.ini.gz" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsLiteVersion)' != 'true' And ('$(Platform)'=='x86' Or '$(Platform)'=='AnyCPU')">
-    <None Remove="externals\x86\rdpwrap.dll.cr" />
-    <None Remove="externals\x86\RDPWrapOffsetFinder.exe.cr" />
-    <EmbeddedResource Include="externals\x86\rdpwrap.dll.cr" />
-    <EmbeddedResource Include="externals\x86\RDPWrapOffsetFinder.exe.cr" />
+    <None Remove="externals\x86\rdpwrap.dll.gz" />
+    <None Remove="externals\x86\RDPWrapOffsetFinder.exe.gz" />
+    <EmbeddedResource Include="externals\x86\rdpwrap.dll.gz" />
+    <EmbeddedResource Include="externals\x86\RDPWrapOffsetFinder.exe.gz" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsLiteVersion)' != 'true' And ('$(Platform)'=='x64' Or '$(Platform)'=='AnyCPU')">
-    <None Remove="externals\x64\rdpwrap.dll.cr" />
-    <None Remove="externals\x64\RDPWrapOffsetFinder.exe.cr" />
-    <EmbeddedResource Include="externals\x64\rdpwrap.dll.cr" />
-    <EmbeddedResource Include="externals\x64\RDPWrapOffsetFinder.exe.cr" />
+    <None Remove="externals\x64\rdpwrap.dll.gz" />
+    <None Remove="externals\x64\RDPWrapOffsetFinder.exe.gz" />
+    <EmbeddedResource Include="externals\x64\rdpwrap.dll.gz" />
+    <EmbeddedResource Include="externals\x64\RDPWrapOffsetFinder.exe.gz" />
   </ItemGroup>
   <ItemGroup Condition="'$(Platform)'=='x86' Or '$(Platform)'=='AnyCPU'">
-    <None Remove="externals\x86\Zydis.dll.cr" />
-    <None Remove="externals\x86\TermWrap.dll.cr" />
-    <EmbeddedResource Include="externals\x86\Zydis.dll.cr" />
-    <EmbeddedResource Include="externals\x86\TermWrap.dll.cr" />
+    <None Remove="externals\x86\Zydis.dll.gz" />
+    <None Remove="externals\x86\TermWrap.dll.gz" />
+    <EmbeddedResource Include="externals\x86\Zydis.dll.gz" />
+    <EmbeddedResource Include="externals\x86\TermWrap.dll.gz" />
   </ItemGroup>
   <ItemGroup Condition="'$(Platform)'=='x64' Or '$(Platform)'=='AnyCPU'">
-    <None Remove="externals\x64\Zydis.dll.cr" />
-    <None Remove="externals\x64\TermWrap.dll.cr" />
-    <None Remove="externals\x64\UmWrap.dll.cr" />
-    <None Remove="externals\x64\EndpWrap.dll.cr" />
-    <EmbeddedResource Include="externals\x64\Zydis.dll.cr" />
-    <EmbeddedResource Include="externals\x64\TermWrap.dll.cr" />
-    <EmbeddedResource Include="externals\x64\UmWrap.dll.cr" />
-    <EmbeddedResource Include="externals\x64\EndpWrap.dll.cr" />
+    <None Remove="externals\x64\Zydis.dll.gz" />
+    <None Remove="externals\x64\TermWrap.dll.gz" />
+    <None Remove="externals\x64\UmWrap.dll.gz" />
+    <None Remove="externals\x64\EndpWrap.dll.gz" />
+    <EmbeddedResource Include="externals\x64\Zydis.dll.gz" />
+    <EmbeddedResource Include="externals\x64\TermWrap.dll.gz" />
+    <EmbeddedResource Include="externals\x64\UmWrap.dll.gz" />
+    <EmbeddedResource Include="externals\x64\EndpWrap.dll.gz" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>
