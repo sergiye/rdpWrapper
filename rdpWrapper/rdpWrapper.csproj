@@ -89,6 +89,11 @@
   <PropertyGroup>
     <IsLiteVersion Condition=" '$(DefineConstants)' != '' and  '$(DefineConstants)' != '$(DefineConstants.Replace(`LITEVERSION`,``))' ">true</IsLiteVersion>
   </PropertyGroup>
+  <PropertyGroup>
+    <CommonSourcesDir>$(MSBuildThisFileDirectory)..\..\common\</CommonSourcesDir>
+    <UseLocalCommon Condition="'$(UseLocalCommon)' == '' And Exists('$(CommonSourcesDir)sergiye.Common')">true</UseLocalCommon>
+    <UseLocalCommon Condition="'$(UseLocalCommon)' == ''">false</UseLocalCommon>
+  </PropertyGroup>
   <ItemGroup Condition=" '$(IsLiteVersion)' != 'true'">
     <None Remove="externals\rdpwrap.ini.gz" />
     <EmbeddedResource Include="externals\rdpwrap.ini.gz" />
@@ -122,8 +127,6 @@
     <EmbeddedResource Include="externals\x64\EndpWrap.dll.gz" />
   </ItemGroup>
   <ItemGroup>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Update="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
@@ -136,11 +139,35 @@
     </Compile>
     <Content Include="app.ico" />
   </ItemGroup>
+  <ItemGroup Condition="'$(UseLocalCommon)' == 'true'">
+    <Compile Include="$(CommonSourcesDir)sergiye.Common\Extensions\JsonExtensions.cs" Link="Common\JsonExtensions.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common\Extensions\StringExtensions.cs" Link="Common\StringExtensions.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common\Tools\Crasher.cs" Link="Common\Crasher.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common\Tools\ISettings.cs" Link="Common\ISettings.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common\Tools\Logger.cs" Link="Common\Logger.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common\Tools\OSHelper.cs" Link="Common\OSHelper.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common\Tools\ServiceHelper.cs" Link="Common\ServiceHelper.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common\Tools\Updater.cs" Link="Common\Updater.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common\Win\WinApiHelper.cs" Link="Common\WinApiHelper.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common\Win\WinStationHelper.cs" Link="Common\WinStationHelper.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\UserOption.cs" Link="Common\UserOption.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\PersistentSettings.cs" Link="Common\PersistentSettings.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\SimplTextBox.cs" Link="Common\SimplTextBox.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\ToolStripRadioButtonMenuItem.cs" Link="Common\ToolStripRadioButtonMenuItem.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\Themes\CustomTheme.cs" Link="Common\Themes\CustomTheme.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\Themes\DarkTheme.cs" Link="Common\Themes\DarkTheme.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\Themes\LightTheme.cs" Link="Common\Themes\LightTheme.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\Themes\Theme.cs" Link="Common\Themes\Theme.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\Themes\ThemedToolStripRenderer.cs" Link="Common\Themes\ThemedToolStripRenderer.cs" />
+    <EmbeddedResource Include="$(CommonSourcesDir)themes\*.json" Link="themes\%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseLocalCommon)' != 'true'">
+    <PackageReference Include="SergiyE.Common" Version="1.*" />
+    <PackageReference Include="SergiyE.Common.UI" Version="1.*" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
-    <PackageReference Include="SergiyE.Common" Version="1.*" />
-    <PackageReference Include="SergiyE.Common.UI" Version="1.*" />
     <PackageReference Include="Costura.Fody">
       <PrivateAssets>all</PrivateAssets>
       <Version>4.1.0</Version>

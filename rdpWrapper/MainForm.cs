@@ -241,7 +241,7 @@ namespace rdpWrapper {
         cbxAllowTSConnections.Checked = wrapper.AllowTsConnections;
         cbxHonorLegacy.Checked = wrapper.HonorLegacy;
         numRDPPort.Value = oldPort = wrapper.RdpPort;
-        numMaxConnections.Enabled = OSHelper.IsWindowsServer;
+        numMaxConnections.Enabled = OSHelper.IsWindowsServer || OSHelper.IsWin11_25H2_OrGreater;
         numMaxConnections.Value = wrapper.MaximumConnectionsAllowed;
 
         rgNLAOptions.SelectedIndex = wrapper.SecurityLayer switch {
