@@ -531,9 +531,9 @@ namespace rdpWrapper {
         serviceHelper.Stop(RdpServiceName, TimeSpan.FromSeconds(10));
       }
 
-      logger.Log("Removed folder: " + WrapperFolderPath);
       try {
         Directory.Delete(WrapperFolderPath, true);
+        logger.Log("Removed folder: " + WrapperFolderPath);
       }
       catch (DirectoryNotFoundException) {
         //ignore
