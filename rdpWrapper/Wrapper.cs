@@ -444,18 +444,25 @@ namespace rdpWrapper {
       }
       if (iniFile.IsNullOrEmpty() || !File.Exists(iniFile)) return;
 
+      var restart = restartService && serviceHelper.GetState(RdpServiceName) is ServiceControllerStatus.Running;
       try {
-        if (restartService)
+        if (restart)
           serviceHelper.Stop(RdpServiceName, TimeSpan.FromSeconds(10));
 
         SafeDeleteFile(destFilePath);
         File.Move(iniFile, destFilePath);
-
-        if (restartService)
-          serviceHelper.Start(RdpServiceName, TimeSpan.FromSeconds(10));
       }
       catch (Exception ex) {
         var message = "Failed to update config: " + ex.Message;
+        logger.Log(message, Logger.StateKind.Error);
+        onError?.Invoke(message);
+      }
+      if (!restart) return;
+      try {
+        serviceHelper.Start(RdpServiceName, TimeSpan.FromSeconds(10));
+      }
+      catch (Exception ex) {
+        var message = "Failed to start service: " + ex.Message;
         logger.Log(message, Logger.StateKind.Error);
         onError?.Invoke(message);
       }
