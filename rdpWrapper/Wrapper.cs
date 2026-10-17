@@ -125,11 +125,11 @@ namespace rdpWrapper {
           }
           else {
             using (var key = baseKey.OpenSubKey(RegTsKey, writable: true)) {
-              key?.DeleteValue("fPolicyLimitConnections");
-              key?.DeleteValue("MaxConnections");
+              key?.DeleteValue("fPolicyLimitConnections", false);
+              key?.DeleteValue("MaxConnections", false);
             }
             using (var key = baseKey.OpenSubKey(RegRdpKey, writable: true))
-              key?.DeleteValue("MaxInstanceCount");
+              key?.DeleteValue("MaxInstanceCount", false);
           }
         }
       }
