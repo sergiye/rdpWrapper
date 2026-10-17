@@ -577,6 +577,7 @@ namespace rdpWrapper {
 #else
         if (!File.Exists(wrapperIniLastPath)) {
           MessageBox.Show($"File '{wrapperIniLastPath}' not found.", Updater.ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+          return;
         }
 
         Process.Start(new ProcessStartInfo {
