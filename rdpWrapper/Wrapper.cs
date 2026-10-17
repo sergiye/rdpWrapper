@@ -60,6 +60,11 @@ namespace rdpWrapper {
     private const string EndpWrapDllName = "EndpWrap.dll";
     private const string ZydisDllName = "Zydis.dll";
 
+    private const int MoveFileDelayUntilReboot = 4;
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool MoveFileEx(string existingFileName, string newFileName, int flags);
+
     private readonly Logger logger;
     private readonly ServiceHelper serviceHelper;
     private readonly RegistryView registryView = Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Registry32;
@@ -493,21 +498,21 @@ namespace rdpWrapper {
         string wrapPath;
         switch (wrapToInstall) {
           case SupportedWrappers.TermWrap:
-            wrapPath = ExtractResourceFile(TermWrapDllName, WrapperFolderPath, archPrefix: true);
+            wrapPath = ExtractResourceFile(TermWrapDllName, WrapperFolderPath, true, true);
             logger.Log("Extracted TermWrap.dll -> " + wrapPath);
-            var zydis = ExtractResourceFile(ZydisDllName, WrapperFolderPath, archPrefix: true);
+            var zydis = ExtractResourceFile(ZydisDllName, WrapperFolderPath, true, true);
             logger.Log("Extracted zydis.dll -> " + zydis);
             if (Environment.Is64BitOperatingSystem) {
-              var umWrap = ExtractResourceFile(UmWrapDllName, WrapperFolderPath, archPrefix: true);
+              var umWrap = ExtractResourceFile(UmWrapDllName, WrapperFolderPath, true, true);
               logger.Log("Extracted umWrap.dll -> " + umWrap);
-              var endpWrap = ExtractResourceFile(EndpWrapDllName, WrapperFolderPath, archPrefix: true);
+              var endpWrap = ExtractResourceFile(EndpWrapDllName, WrapperFolderPath, true, true);
               logger.Log("Extracted endpWrap.dll -> " + endpWrap);
             }
 
             break;
 #if !LITEVERSION
           case SupportedWrappers.RdpWrap:
-            wrapPath = ExtractResourceFile(RdpWrapDllName, WrapperFolderPath, archPrefix: true);
+            wrapPath = ExtractResourceFile(RdpWrapDllName, WrapperFolderPath, true, true);
             logger.Log("Extracted rdpWrap.dll -> " + wrapPath);
             break;
 #endif
@@ -556,14 +561,21 @@ namespace rdpWrapper {
       }
 
       try {
-        Directory.Delete(WrapperFolderPath, true);
-        logger.Log("Removed folder: " + WrapperFolderPath);
-      }
-      catch (DirectoryNotFoundException) {
-        //ignore
+        if (Directory.Exists(WrapperFolderPath)) {
+          foreach (var file in Directory.GetFiles(WrapperFolderPath, "*", SearchOption.AllDirectories))
+            RemoveFile(file);
+          try {
+            Directory.Delete(WrapperFolderPath, true);
+            logger.Log("Removed folder: " + WrapperFolderPath);
+          }
+          catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
+            DeleteOnReboot(WrapperFolderPath);
+            logger.Log("Folder will be removed after reboot: " + WrapperFolderPath);
+          }
+        }
       }
       catch (Exception ex) {
-        logger.Log(ex.Message, Logger.StateKind.Error); //todo: ignore?
+        logger.Log(ex.Message, Logger.StateKind.Error);
       }
       if (serviceState is ServiceControllerStatus.Running)
         serviceHelper.Start(RdpServiceName, TimeSpan.FromSeconds(10));
@@ -611,7 +623,7 @@ namespace rdpWrapper {
       if (File.Exists(filePath)) {
         if (!deleteExisting)
           return filePath;
-        SafeDeleteFile(filePath);
+        RemoveFile(filePath);
       }
       try {
         var type = typeof(SupportedWrappers);
@@ -633,6 +645,43 @@ namespace rdpWrapper {
         logger.Log(ex.Message, Logger.StateKind.Error);
         throw;
       }
+    }
+
+    // A library loaded by a process cannot be deleted but can be renamed: it is moved aside and deleted at the next reboot,
+    // so its name is free for a new version.
+    private void RemoveFile(string filePath) {
+      if (!File.Exists(filePath) || TryDeleteFile(filePath)) return;
+      if (filePath.EndsWith(".old", StringComparison.OrdinalIgnoreCase)) {
+        DeleteOnReboot(filePath);
+        return;
+      }
+      // the versions moved aside before are deleted again: the service hardly keeps two of them loaded
+      foreach (var old in Directory.GetFiles(Path.GetDirectoryName(filePath), Path.GetFileName(filePath) + "*.old"))
+        TryDeleteFile(old);
+      var aside = filePath + ".old";
+      for (var i = 1; File.Exists(aside); i++)
+        aside = $"{filePath}.{i}.old";
+      File.Move(filePath, aside);
+      logger.Log($"File is in use, moved to '{aside}' and will be removed after reboot");
+      DeleteOnReboot(aside);
+    }
+
+    private static bool TryDeleteFile(string filePath) {
+      try {
+        File.Delete(filePath);
+        return true;
+      }
+      catch (IOException) {
+        return false;
+      }
+      catch (UnauthorizedAccessException) {
+        return false;
+      }
+    }
+
+    private void DeleteOnReboot(string path) {
+      if (!MoveFileEx(path, null, MoveFileDelayUntilReboot))
+        logger.Log($"Failed to schedule removal of '{path}' (code {Marshal.GetLastWin32Error()}).", Logger.StateKind.Error);
     }
 
     private void SafeDeleteFile(string filePath) {
