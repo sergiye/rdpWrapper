@@ -158,7 +158,12 @@
     <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\Themes\DarkTheme.cs" Link="Common\Themes\DarkTheme.cs" />
     <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\Themes\LightTheme.cs" Link="Common\Themes\LightTheme.cs" />
     <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\Themes\Theme.cs" Link="Common\Themes\Theme.cs" />
-    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\Themes\ThemedToolStripRenderer.cs" Link="Common\Themes\ThemedToolStripRenderer.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\Themes\ThemeDraw.cs" Link="Common\Themes\ThemeDraw.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\Themes\ThemedProfessionalRenderer.cs" Link="Common\Themes\ThemedProfessionalRenderer.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\Themes\ThemedControlBorder.cs" Link="Common\Themes\ThemedControlBorder.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\Themes\ThemedTitleBar.cs" Link="Common\Themes\ThemedTitleBar.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\Themes\ThemedWindowTitle.cs" Link="Common\Themes\ThemedWindowTitle.cs" />
+    <Compile Include="$(CommonSourcesDir)sergiye.Common.UI\Themes\ThemeSupport.cs" Link="Common\Themes\ThemeSupport.cs" />
     <EmbeddedResource Include="$(CommonSourcesDir)themes\*.json" Link="themes\%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseLocalCommon)' != 'true'">

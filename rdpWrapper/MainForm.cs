@@ -24,6 +24,7 @@ namespace rdpWrapper {
     private readonly UserOption showAntivirusWarn;
     private readonly UserOption addDefenderExclusion;
     private readonly UserOption setFirewallRule;
+    private readonly ThemedWindowTitle windowTitle;
 
     public MainForm() {
 
@@ -32,23 +33,22 @@ namespace rdpWrapper {
       Icon = Icon.ExtractAssociatedIcon(typeof(MainForm).Assembly.Location);
       var appArch = Environment.Is64BitProcess ? "x64" : "x86";
       var sysArch = Environment.Is64BitOperatingSystem ? "x64" : "x86";
-      var title = $"{Updater.ApplicationTitle} v{Updater.CurrentVersion} {appArch}";
-      if (appArch != sysArch)
-        title += "/" + sysArch;
-      Text = title;
+      var arch = appArch != sysArch ? $"{appArch}/{sysArch}" : appArch;
+      Text = $"{Updater.ApplicationTitle} {arch}";
 
       settings = new PersistentSettings();
       settings.Load();
       InitializeTheme();
 
-      var sizeSpan = Height - ClientSize.Height;
-      MinimumSize = new Size { Width = Width, Height = sizeSpan + gbxGeneralSettings.Height + gbxStatus.Height + mainMenu.Height };
+      windowTitle = ThemedWindowTitle.Attach(this, mainMenu, WindowTitleStyle.ThemeColors);
+      windowTitle.Bar.SizeChanged += (_, _) => FitHeight(!txtLog.Visible);
+      MinimumSize = new Size(Width, 0);
 
       var showLog = new UserOption("showLog", true, showLogToolStripMenuItem, settings);
       showLog.Changed += delegate {
         SetLogVisible(showLogToolStripMenuItem.Checked);
       };
-      SetLogVisible(showLog.Value);
+      ApplyLogState(showLog.Value);
       var portable = new UserOption("portable", false, storeSeiingsInFileToolStripMenuItem, settings);
       portable.Changed += delegate {
         settings.IsPortable = portable.Value;
@@ -74,7 +74,7 @@ namespace rdpWrapper {
 
       logger = new Logger();
       logger.OnNewLogEvent += AddToLog;
-      logger.Log($"Application started: {title}", Logger.StateKind.Info, false);
+      logger.Log($"Application started: {Updater.ApplicationTitle} v{Updater.CurrentVersion} {arch}", Logger.StateKind.Info, false);
 
       wrapper = new Wrapper(logger);
 
@@ -96,6 +96,7 @@ namespace rdpWrapper {
       refreshTimer.Interval = 1000;
 
       Load += (_, _) => {
+        FitHeight(true);
         RestorePosition();
         RefreshSystemSettings();
         TimerTick(null, EventArgs.Empty);
@@ -207,18 +208,22 @@ namespace rdpWrapper {
       }
     }
 
+    private void ApplyLogState(bool visible) {
+      FormBorderStyle = visible ? FormBorderStyle.Sizable : FormBorderStyle.FixedDialog;
+      txtLog.Visible = visible;
+    }
+
     private void SetLogVisible(bool visible) {
-      var sizeSpan = Height - ClientSize.Height;
-      if (visible) {
-        FormBorderStyle = FormBorderStyle.Sizable;
-        txtLog.Visible = true;
-        Height = sizeSpan + gbxGeneralSettings.Height + gbxStatus.Height + 100 + mainMenu.Height;
-      }
-      else {
-        FormBorderStyle = FormBorderStyle.FixedDialog;
-        Height = sizeSpan + gbxGeneralSettings.Height + gbxStatus.Height + mainMenu.Height;
-        txtLog.Visible = false;
-      }
+      ApplyLogState(visible);
+      FitHeight(true);
+    }
+
+    // The title drawn by the program is a part of the client area, so the height of the frame is measured each time.
+    private void FitHeight(bool resize) {
+      var fixedHeight = Height - ClientSize.Height + windowTitle.Bar.Height + gbxStatus.Height + gbxGeneralSettings.Height;
+      MinimumSize = new Size(MinimumSize.Width, fixedHeight);
+      if (resize)
+        Height = fixedHeight + (txtLog.Visible ? 100 : 0);
     }
 
     private void checkFoNewVersionToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -278,23 +283,24 @@ namespace rdpWrapper {
     }
 
     private void InitializeTheme() {
-
-      ToolStripRadioButtonMenuItem.DisplayAsCheckboxes = true;
-      mainMenu.Renderer = new ThemedToolStripRenderer();
-
+      const string themesResources = "rdpWrapper.themes";
+      ThemeSupport.Initialize(settings.GetValue("theme", ThemeSupport.AutoId), id => settings.SetValue("theme", id), themesResources);
       var currentItem = CustomTheme.FillThemesMenu((title, theme, onClick) => {
         if (theme == null && onClick == null) {
-          themeMenuItem.DropDownItems.Add(title);
+          themeMenuItem.DropDownItems.Add(new ToolStripSeparator());
           return null;
         }
         var item = new ToolStripRadioButtonMenuItem(title, null, onClick);
         themeMenuItem.DropDownItems.Add(item);
         return item;
-      }, () => {
-        settings.SetValue("theme", Theme.IsAutoThemeEnabled ? "auto" : Theme.Current.Id);
-      }, settings.GetValue("theme", "auto"), "rdpWrapper.themes");
-      currentItem?.PerformClick();
-      Theme.Current.Apply(this);
+      }, null, ThemeSupport.CurrentId, themesResources);
+      if (currentItem != null)
+        currentItem.Checked = true;
+    }
+
+    protected override void OnHandleCreated(EventArgs e) {
+      base.OnHandleCreated(e);
+      ThemeSupport.Apply(this);
     }
 
     private void btnRestartService_Click(object sender, EventArgs e) {
@@ -663,7 +669,7 @@ namespace rdpWrapper {
       var x = settings.GetValue("Window_X", -1);
       var y = settings.GetValue("Window_Y", -1);
       var w = Width;// settings.GetValue("Window_Width", -1);
-      var h = settings.GetValue("Window_Height", -1);
+      var h = txtLog.Visible ? Math.Max(settings.GetValue("Window_Height", -1), MinimumSize.Height) : Height;
       bool hasAll = x >= 0 && y >= 0 && w >= 0 && h >= 0;
 
       Rectangle bounds = new(x, y, w, h);

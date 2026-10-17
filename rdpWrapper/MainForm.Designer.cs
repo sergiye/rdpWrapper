@@ -56,7 +56,6 @@ namespace rdpWrapper {
       this.editWrapIniMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
       this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-      this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.installMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.uninstallMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.restartServiceMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -444,7 +443,6 @@ namespace rdpWrapper {
       this.mainMenu.ImageScalingSize = new System.Drawing.Size(24, 24);
       this.mainMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
-            this.toolsToolStripMenuItem,
             this.preferencesToolStripMenuItem,
             this.helpToolStripMenuItem});
       this.mainMenu.Location = new System.Drawing.Point(0, 0);
@@ -456,8 +454,17 @@ namespace rdpWrapper {
       // fileToolStripMenuItem
       // 
       this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.installMenuItem,
+            this.uninstallMenuItem,
+            this.restartServiceMenuItem,
             this.testToolStripMenuItem,
+            this.generateMenuItem,
             this.editWrapIniMenuItem,
+            this.toolStripMenuItem3,
+            this.addUserToolStripMenuItem,
+            this.fixMSUserMenuItem,
+            this.manageUsersToolStripMenuItem,
+            this.manageUsersoldToolStripMenuItem,
             this.toolStripMenuItem2,
             this.exitToolStripMenuItem});
       this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
@@ -491,22 +498,6 @@ namespace rdpWrapper {
       this.exitToolStripMenuItem.Size = new System.Drawing.Size(145, 22);
       this.exitToolStripMenuItem.Text = "Exit";
       this.exitToolStripMenuItem.Click += new System.EventHandler(this.btnClose_Click);
-      // 
-      // toolsToolStripMenuItem
-      // 
-      this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.installMenuItem,
-            this.uninstallMenuItem,
-            this.restartServiceMenuItem,
-            this.generateMenuItem,
-            this.toolStripMenuItem3,
-            this.addUserToolStripMenuItem,
-            this.fixMSUserMenuItem,
-            this.manageUsersToolStripMenuItem,
-            this.manageUsersoldToolStripMenuItem});
-      this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
-      this.toolsToolStripMenuItem.Size = new System.Drawing.Size(46, 20);
-      this.toolsToolStripMenuItem.Text = "Tools";
       // 
       // installMenuItem
       // 
@@ -742,7 +733,6 @@ namespace rdpWrapper {
     private ToolStripMenuItem fileToolStripMenuItem;
     private ToolStripSeparator toolStripMenuItem2;
     private ToolStripMenuItem exitToolStripMenuItem;
-    private ToolStripMenuItem toolsToolStripMenuItem;
     private ToolStripMenuItem helpToolStripMenuItem;
     private ToolStripMenuItem checkFoNewVersionToolStripMenuItem;
     private ToolStripSeparator toolStripMenuItem1;
