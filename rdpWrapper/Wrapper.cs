@@ -407,6 +407,7 @@ namespace rdpWrapper {
       string iniFile = null;
       string offsetFinder = null;
       string zydis = null;
+      var generated = false;
       try {
         logger.Log("Generating config...");
         var workingDir = Path.GetTempPath();
@@ -415,10 +416,14 @@ namespace rdpWrapper {
         zydis = ExtractResourceFile(ZydisDllName, workingDir, archPrefix: true);
         var p = StartProcess("cmd", $"/c \"{offsetFinder}\" >> {RdpWrapIniName} & exit", workingDir);
         p.WaitForExit();
-        if (p.ExitCode == 0)
+        generated = p.ExitCode == 0;
+        if (generated) {
           logger.Log(" Done", Logger.StateKind.Info, false);
-        else
+        }
+        else {
           logger.Log(" Error", Logger.StateKind.Error, false);
+          onError?.Invoke($"Failed to generate config: offset finder exited with code {p.ExitCode}.");
+        }
       }
       catch (Exception ex) {
         var message = "Failed to generate config: " + ex.Message;
@@ -432,6 +437,11 @@ namespace rdpWrapper {
         }
       }
 
+      // without the offsets of this build the embedded ini is still better than none, but not better than the current one
+      if (!generated && File.Exists(destFilePath)) {
+        SafeDeleteFile(iniFile);
+        return;
+      }
       if (iniFile.IsNullOrEmpty() || !File.Exists(iniFile)) return;
 
       try {
