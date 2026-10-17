@@ -618,7 +618,8 @@ namespace rdpWrapper {
       // if (!string.IsNullOrEmpty(_logFileName))
       //   File.AppendAllText(_logFileName, $"{DateTime.Now:T} - {message}\n");
       txtLog.ScrollToCaret();
-      Application.DoEvents();
+      // long operations run on the UI thread: only the log is repainted, input is not processed in the middle of them
+      txtLog.Update();
     }
 
     private void btnInstall_Click(object sender, EventArgs e) {
