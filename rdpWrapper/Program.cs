@@ -117,7 +117,7 @@ namespace rdpWrapper {
             if (!Enum.TryParse(settings.GetValue("preferredWrapper", "TermWrap"), out SupportedWrappers preferredWrapper)) {
               preferredWrapper = SupportedWrappers.TermWrap;
             }
-            wrapper.Install(preferredWrapper, true);
+            wrapper.Install(preferredWrapper, settings.GetValue("addDefenderExclusion", true));
             break;
           }
           case "-uninstall": {
