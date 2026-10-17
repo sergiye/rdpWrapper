@@ -592,7 +592,7 @@ namespace rdpWrapper {
 
     private void AddToLog(string message, Logger.StateKind state, bool newLine) {
       if (InvokeRequired) {
-        Invoke(new Action<string, Logger.StateKind, bool>(AddToLog), message, state);
+        Invoke(new Action<string, Logger.StateKind, bool>(AddToLog), message, state, newLine);
         return;
       }
 
