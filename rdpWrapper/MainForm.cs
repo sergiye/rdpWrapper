@@ -513,7 +513,11 @@ namespace rdpWrapper {
         if (InputForm.GetValue(Updater.ApplicationName, "Enter MS account 'User name':", out var userName) == DialogResult.OK) {
           var process = Process.Start("runAs", $"/u:{userName} \"{Updater.CurrentFileLocation}\"");
           if (process != null) {
-            process.WaitForExit(10000);
+            if (!process.WaitForExit(60000)) {
+              process.Kill();
+              MessageBox.Show("The password was not entered in time.", Updater.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+              return;
+            }
             if (process.ExitCode == 0) {
               MessageBox.Show("Action completed successfully!", Updater.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Information);
               return;
