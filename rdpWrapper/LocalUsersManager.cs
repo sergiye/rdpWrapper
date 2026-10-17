@@ -44,18 +44,6 @@ namespace rdpWrapper {
       return user;
     }
 
-    public void SetUserPassword(UserPrincipal user, string password) {
-
-      if (user == null)
-        throw new ArgumentNullException(nameof(user));
-      if (password.IsNullOrEmpty())
-        throw new ArgumentNullException(nameof(password));
-
-      user.SetPassword(password);
-      user.Save();
-      logger.Log($"User '{user.Name}' password changed.", Logger.StateKind.Info);
-    }
-
     public void EnsureUserInRemoteDesktopUsers(UserPrincipal user) {
 
       if (user == null)
