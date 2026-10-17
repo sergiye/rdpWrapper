@@ -93,7 +93,7 @@ namespace rdpWrapper {
         using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView)){
           using (var key = baseKey.OpenSubKey(RegKey, writable: true))
             key?.SetValue(ValueSingleSession, value ? 1 : 0, RegistryValueKind.DWord);
-          using (var key = baseKey.OpenSubKey(RegTsKey, writable: true))
+          using (var key = baseKey.CreateSubKey(RegTsKey))
             key?.SetValue(ValueSingleSession, value ? 1 : 0, RegistryValueKind.DWord);
         }
       }
@@ -117,7 +117,7 @@ namespace rdpWrapper {
           if (value > 0) {
             using (var key = baseKey.OpenSubKey(RegRdpKey, writable: true))
               key?.SetValue("MaxInstanceCount", value, RegistryValueKind.DWord); //max 999999
-            using (var key = baseKey.OpenSubKey(RegTsKey, writable: true)) {
+            using (var key = baseKey.CreateSubKey(RegTsKey)) {
               //Enforce it (same effect as enabling the policy)
               key?.SetValue("fPolicyLimitConnections", 1, RegistryValueKind.DWord);
               key?.SetValue("MaxConnections", value, RegistryValueKind.DWord);
@@ -218,7 +218,7 @@ namespace rdpWrapper {
         using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView)) {
           using (var key = baseKey.OpenSubKey(RegRdpKey, writable: true))
             key?.SetValue(ValueShadow, value, RegistryValueKind.DWord);
-          using (var key = baseKey.OpenSubKey(RegTsKey, writable: true))
+          using (var key = baseKey.CreateSubKey(RegTsKey))
             key?.SetValue(ValueShadow, value, RegistryValueKind.DWord);
         }
       }
@@ -245,7 +245,7 @@ namespace rdpWrapper {
       }
       set {
         using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView))
-        using (var key = baseKey.OpenSubKey(RegTsKey, writable: true)) {
+        using (var key = baseKey.CreateSubKey(RegTsKey)) {
           key?.SetValue(ValueDisableCam, value ? 0 : 1, RegistryValueKind.DWord);
         }
       }
@@ -259,7 +259,7 @@ namespace rdpWrapper {
       }
       set {
         using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView))
-        using (var key = baseKey.OpenSubKey(RegTsKey, writable: true)) {
+        using (var key = baseKey.CreateSubKey(RegTsKey)) {
           key?.SetValue(ValueDisableCameraRedir, value ? 0 : 1, RegistryValueKind.DWord);
         }
       }
@@ -273,7 +273,7 @@ namespace rdpWrapper {
       }
       set {
         using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView))
-        using (var key = baseKey.OpenSubKey(RegTsKey, writable: true)) {
+        using (var key = baseKey.CreateSubKey(RegTsKey)) {
           key?.SetValue(ValueDisableAudioCapture, value ? 0 : 1, RegistryValueKind.DWord);
         }
       }
@@ -287,7 +287,7 @@ namespace rdpWrapper {
       }
       set {
         using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView)) {
-          using (var key = baseKey.OpenSubKey(RegTsKey, writable: true))
+          using (var key = baseKey.CreateSubKey(RegTsKey))
             key?.SetValue(ValueDisablePNPRedir, value ? 0 : 1, RegistryValueKind.DWord);
         }
       }
@@ -305,7 +305,7 @@ namespace rdpWrapper {
       }
       set {
         using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView)) {
-          using (var key = baseKey.OpenSubKey(RegTsKey + "\\Client", writable: true)) {
+          using (var key = value.HasValue ? baseKey.CreateSubKey(RegTsKey + "\\Client") : baseKey.OpenSubKey(RegTsKey + "\\Client", writable: true)) {
             if (value.HasValue) {
               key?.SetValue(ValueUsbRedirectionEnableMode, value.Value ? 1 : 2, RegistryValueKind.DWord);
             }
@@ -325,7 +325,7 @@ namespace rdpWrapper {
       }
       set {
         using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView))
-        using (var key = baseKey.OpenSubKey(RegTsKey + "\\Client", writable: true))
+        using (var key = baseKey.CreateSubKey(RegTsKey + "\\Client"))
           key?.SetValue(ValueRedirectionWarningDialogVersion, value ? 1 : 0, RegistryValueKind.DWord);
       }
     }
