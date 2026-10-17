@@ -528,10 +528,8 @@ namespace rdpWrapper {
         logger.Log("Configuring service library...");
         using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView)) {
           using (var reg = baseKey.OpenSubKey(RegTermServiceKey + "\\Parameters", writable: true)) {
-            if (reg == null) {
-              logger.Log($"OpenKey error (code {Marshal.GetLastWin32Error()}).", Logger.StateKind.Error);
-              return;
-            }
+            if (reg == null)
+              throw new InvalidOperationException($"Registry key 'HKLM\\{RegTermServiceKey}\\Parameters' not found.");
             reg.SetValue("ServiceDll", wrapPath, RegistryValueKind.ExpandString);
           }
         }
@@ -547,10 +545,8 @@ namespace rdpWrapper {
       logger.Log("Resetting service library...");
       using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView)) {
         using (var reg = baseKey.OpenSubKey(RegTermServiceKey + "\\Parameters", writable: true)) {
-          if (reg == null) {
-            logger.Log($"OpenKey error (code {Marshal.GetLastWin32Error()}).", Logger.StateKind.Error);
-            return;
-          }
+          if (reg == null)
+            throw new InvalidOperationException($"Registry key 'HKLM\\{RegTermServiceKey}\\Parameters' not found.");
           reg.SetValue("ServiceDll", @"%SystemRoot%\System32\termsrv.dll", RegistryValueKind.ExpandString);
         }
       }
