@@ -402,7 +402,7 @@ namespace rdpWrapper {
     #endregion
 
 #if !LITEVERSION
-    internal void GenerateIniFile(string destFilePath, bool executeCleanup = true, Action<string> onError = null) {
+    internal void GenerateIniFile(string destFilePath, bool executeCleanup = true, Action<string> onError = null, bool restartService = true) {
 
       string iniFile = null;
       string offsetFinder = null;
@@ -445,12 +445,14 @@ namespace rdpWrapper {
       if (iniFile.IsNullOrEmpty() || !File.Exists(iniFile)) return;
 
       try {
-        serviceHelper.Stop(RdpServiceName, TimeSpan.FromSeconds(10));
+        if (restartService)
+          serviceHelper.Stop(RdpServiceName, TimeSpan.FromSeconds(10));
 
         SafeDeleteFile(destFilePath);
         File.Move(iniFile, destFilePath);
 
-        serviceHelper.Start(RdpServiceName, TimeSpan.FromSeconds(10));
+        if (restartService)
+          serviceHelper.Start(RdpServiceName, TimeSpan.FromSeconds(10));
       }
       catch (Exception ex) {
         var message = "Failed to update config: " + ex.Message;
@@ -466,62 +468,67 @@ namespace rdpWrapper {
       if (prevServiceState is ServiceControllerStatus.Running)
         serviceHelper.Stop(RdpServiceName, TimeSpan.FromSeconds(10));
 
-      Directory.CreateDirectory(WrapperFolderPath);
-      logger.Log("Folder created: " + WrapperFolderPath);
+      // the library of the service is switched last: whatever fails before, the service is started again as it was
+      try {
+        Directory.CreateDirectory(WrapperFolderPath);
+        logger.Log("Folder created: " + WrapperFolderPath);
 
-      AddDirectorySecurity(WrapperFolderPath, [
-        "S-1-5-18", // Local System account
-        "S-1-5-6", // Service group
-        "S-1-5-32-545", // SID for "Users"
-      ] , FileSystemRights.FullControl, AccessControlType.Allow);
+        AddDirectorySecurity(WrapperFolderPath, [
+          "S-1-5-18", // Local System account
+          "S-1-5-6", // Service group
+          "S-1-5-32-545", // SID for "Users"
+        ] , FileSystemRights.FullControl, AccessControlType.Allow);
 
-      if (addDefenderExclusion && IsDefenderActive() && !IsFolderExcluded(WrapperFolderPath)) {
-        SetFolderExclusion(WrapperFolderPath);
-      }
-
-      string wrapPath;
-      switch (wrapToInstall) {
-        case SupportedWrappers.TermWrap:
-          wrapPath = ExtractResourceFile(TermWrapDllName, WrapperFolderPath, archPrefix: true);
-          logger.Log("Extracted TermWrap.dll -> " + wrapPath);
-          var zydis = ExtractResourceFile(ZydisDllName, WrapperFolderPath, archPrefix: true);
-          logger.Log("Extracted zydis.dll -> " + zydis);
-          if (Environment.Is64BitOperatingSystem) {
-            var umWrap = ExtractResourceFile(UmWrapDllName, WrapperFolderPath, archPrefix: true);
-            logger.Log("Extracted umWrap.dll -> " + umWrap);
-            var endpWrap = ExtractResourceFile(EndpWrapDllName, WrapperFolderPath, archPrefix: true);
-            logger.Log("Extracted endpWrap.dll -> " + endpWrap);
-          }
-
-          break;
-#if !LITEVERSION
-        case SupportedWrappers.RdpWrap:
-          wrapPath = ExtractResourceFile(RdpWrapDllName, WrapperFolderPath, archPrefix: true);
-          logger.Log("Extracted rdpWrap.dll -> " + wrapPath);
-          break;
-#endif
-        default:
-          throw new NotSupportedException($"Wrapper of type '{wrapToInstall}' is not supported.");
-      }
-
-      logger.Log("Configuring service library...");
-      using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView)) {
-        using (var reg = baseKey.OpenSubKey(RegTermServiceKey + "\\Parameters", writable: true)) {
-          if (reg == null) {
-            logger.Log($"OpenKey error (code {Marshal.GetLastWin32Error()}).", Logger.StateKind.Error);
-            return;
-          }
-          reg.SetValue("ServiceDll", wrapPath, RegistryValueKind.ExpandString);
+        if (addDefenderExclusion && IsDefenderActive() && !IsFolderExcluded(WrapperFolderPath)) {
+          SetFolderExclusion(WrapperFolderPath);
         }
-      }
+
+        string wrapPath;
+        switch (wrapToInstall) {
+          case SupportedWrappers.TermWrap:
+            wrapPath = ExtractResourceFile(TermWrapDllName, WrapperFolderPath, archPrefix: true);
+            logger.Log("Extracted TermWrap.dll -> " + wrapPath);
+            var zydis = ExtractResourceFile(ZydisDllName, WrapperFolderPath, archPrefix: true);
+            logger.Log("Extracted zydis.dll -> " + zydis);
+            if (Environment.Is64BitOperatingSystem) {
+              var umWrap = ExtractResourceFile(UmWrapDllName, WrapperFolderPath, archPrefix: true);
+              logger.Log("Extracted umWrap.dll -> " + umWrap);
+              var endpWrap = ExtractResourceFile(EndpWrapDllName, WrapperFolderPath, archPrefix: true);
+              logger.Log("Extracted endpWrap.dll -> " + endpWrap);
+            }
+
+            break;
 #if !LITEVERSION
-      if (wrapToInstall == SupportedWrappers.RdpWrap) {
-        GenerateIniFile(Path.Combine(WrapperFolderPath, RdpWrapIniName));
-      }
+          case SupportedWrappers.RdpWrap:
+            wrapPath = ExtractResourceFile(RdpWrapDllName, WrapperFolderPath, archPrefix: true);
+            logger.Log("Extracted rdpWrap.dll -> " + wrapPath);
+            break;
 #endif
-      logger.Log(" Done", Logger.StateKind.Info, false);
-      if (prevServiceState is ServiceControllerStatus.Running)
-        serviceHelper.Start(RdpServiceName, TimeSpan.FromSeconds(10));
+          default:
+            throw new NotSupportedException($"Wrapper of type '{wrapToInstall}' is not supported.");
+        }
+
+#if !LITEVERSION
+        if (wrapToInstall == SupportedWrappers.RdpWrap) {
+          GenerateIniFile(Path.Combine(WrapperFolderPath, RdpWrapIniName), restartService: false);
+        }
+#endif
+        logger.Log("Configuring service library...");
+        using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView)) {
+          using (var reg = baseKey.OpenSubKey(RegTermServiceKey + "\\Parameters", writable: true)) {
+            if (reg == null) {
+              logger.Log($"OpenKey error (code {Marshal.GetLastWin32Error()}).", Logger.StateKind.Error);
+              return;
+            }
+            reg.SetValue("ServiceDll", wrapPath, RegistryValueKind.ExpandString);
+          }
+        }
+        logger.Log(" Done", Logger.StateKind.Info, false);
+      }
+      finally {
+        if (prevServiceState is ServiceControllerStatus.Running)
+          serviceHelper.Start(RdpServiceName, TimeSpan.FromSeconds(10));
+      }
     }
 
     internal void Uninstall() {
