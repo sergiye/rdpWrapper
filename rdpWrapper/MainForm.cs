@@ -307,8 +307,7 @@ namespace rdpWrapper {
       try {
         SetControlsState(false);
         //todo: async
-        wrapper.StopService(TimeSpan.FromSeconds(10));
-        wrapper.StartService(TimeSpan.FromSeconds(10));
+        wrapper.RestartService();
       }
       catch (Exception ex) {
         var message = "Error restarting service: " + ex.Message;

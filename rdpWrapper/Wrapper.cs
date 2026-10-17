@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.ServiceProcess;
+using System.Threading;
 using Microsoft.Win32;
 using sergiye.Common;
 
@@ -51,6 +52,9 @@ namespace rdpWrapper {
     private const string ValueRedirectionWarningDialogVersion = "RedirectionWarningDialogVersion";
 
     private const string RdpServiceName = "TermService";
+    // the dependent services (UmRdpService) are stopped together with it
+    private static readonly TimeSpan ServiceTimeout = TimeSpan.FromSeconds(30);
+    private const int StartAttempts = 5;
 
     internal const string RdpWrapIniName = "rdpwrap.ini";
     private const string RdpWrapDllName = "rdpwrap.dll";
@@ -404,6 +408,51 @@ namespace rdpWrapper {
       return serviceHelper.GetState(RdpServiceName);
     }
 
+    internal void RestartService() {
+      if (serviceHelper.GetState(RdpServiceName) is ServiceControllerStatus.Running)
+        WithServiceStopped(() => { });
+      else
+        serviceHelper.Start(RdpServiceName, ServiceTimeout);
+    }
+
+    // Stopping the service disconnects the RDP session of the user, who cannot see the program until the service runs again:
+    // the service is started again by the program itself whatever fails, and nothing waits for the user before that.
+    private void WithServiceStopped(Action action) {
+      var wasRunning = serviceHelper.GetState(RdpServiceName) is ServiceControllerStatus.Running;
+      var completed = false;
+      try {
+        if (wasRunning)
+          serviceHelper.Stop(RdpServiceName, ServiceTimeout);
+        action();
+        completed = true;
+      }
+      finally {
+        // a failure of the action is reported as it is; the failure to start is in the log then
+        if (wasRunning && !StartAgain() && completed)
+          throw new InvalidOperationException($"Failed to start {RdpServiceName} again, see the log.");
+      }
+    }
+
+    // A stop that timed out still goes on: the service is started once it has stopped.
+    private bool StartAgain() {
+      for (var attempt = 1; attempt <= StartAttempts; attempt++) {
+        try {
+          using (var service = new ServiceController(RdpServiceName)) {
+            if (service.Status == ServiceControllerStatus.StopPending)
+              service.WaitForStatus(ServiceControllerStatus.Stopped, ServiceTimeout);
+          }
+          serviceHelper.Start(RdpServiceName, ServiceTimeout);
+          return true;
+        }
+        catch (Exception ex) {
+          logger.Log($"Failed to start {RdpServiceName} (attempt {attempt} of {StartAttempts}): {ex.Message}", Logger.StateKind.Error);
+          if (attempt < StartAttempts)
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+        }
+      }
+      return false;
+    }
+
     #endregion
 
 #if !LITEVERSION
@@ -449,25 +498,18 @@ namespace rdpWrapper {
       }
       if (iniFile.IsNullOrEmpty() || !File.Exists(iniFile)) return;
 
-      var restart = restartService && serviceHelper.GetState(RdpServiceName) is ServiceControllerStatus.Running;
-      try {
-        if (restart)
-          serviceHelper.Stop(RdpServiceName, TimeSpan.FromSeconds(10));
-
+      void Replace() {
         SafeDeleteFile(destFilePath);
         File.Move(iniFile, destFilePath);
       }
+      try {
+        if (restartService)
+          WithServiceStopped(Replace);
+        else
+          Replace();
+      }
       catch (Exception ex) {
         var message = "Failed to update config: " + ex.Message;
-        logger.Log(message, Logger.StateKind.Error);
-        onError?.Invoke(message);
-      }
-      if (!restart) return;
-      try {
-        serviceHelper.Start(RdpServiceName, TimeSpan.FromSeconds(10));
-      }
-      catch (Exception ex) {
-        var message = "Failed to start service: " + ex.Message;
         logger.Log(message, Logger.StateKind.Error);
         onError?.Invoke(message);
       }
@@ -476,25 +518,22 @@ namespace rdpWrapper {
 
     internal void Install(SupportedWrappers wrapToInstall, bool addDefenderExclusion) {
       //Uninstall();
-      var prevServiceState = serviceHelper.GetState(RdpServiceName);
-      if (prevServiceState is ServiceControllerStatus.Running)
-        serviceHelper.Stop(RdpServiceName, TimeSpan.FromSeconds(10));
+      // done while the service still runs: the exclusion may wait for the confirmation of UAC
+      Directory.CreateDirectory(WrapperFolderPath);
+      logger.Log("Folder created: " + WrapperFolderPath);
 
-      // the library of the service is switched last: whatever fails before, the service is started again as it was
-      try {
-        Directory.CreateDirectory(WrapperFolderPath);
-        logger.Log("Folder created: " + WrapperFolderPath);
+      AddDirectorySecurity(WrapperFolderPath, [
+        "S-1-5-18", // Local System account
+        "S-1-5-6", // Service group
+        "S-1-5-32-545", // SID for "Users"
+      ] , FileSystemRights.FullControl, AccessControlType.Allow);
 
-        AddDirectorySecurity(WrapperFolderPath, [
-          "S-1-5-18", // Local System account
-          "S-1-5-6", // Service group
-          "S-1-5-32-545", // SID for "Users"
-        ] , FileSystemRights.FullControl, AccessControlType.Allow);
+      if (addDefenderExclusion && IsDefenderActive() && !IsFolderExcluded(WrapperFolderPath)) {
+        SetFolderExclusion(WrapperFolderPath);
+      }
 
-        if (addDefenderExclusion && IsDefenderActive() && !IsFolderExcluded(WrapperFolderPath)) {
-          SetFolderExclusion(WrapperFolderPath);
-        }
-
+      // the library of the service is switched last: whatever fails before, the service keeps the former one
+      WithServiceStopped(() => {
         string wrapPath;
         switch (wrapToInstall) {
           case SupportedWrappers.TermWrap:
@@ -534,11 +573,7 @@ namespace rdpWrapper {
           }
         }
         logger.Log(" Done", Logger.StateKind.Info, false);
-      }
-      finally {
-        if (prevServiceState is ServiceControllerStatus.Running)
-          serviceHelper.Start(RdpServiceName, TimeSpan.FromSeconds(10));
-      }
+      });
     }
 
     internal void Uninstall() {
@@ -551,30 +586,25 @@ namespace rdpWrapper {
         }
       }
       logger.Log(" Done", Logger.StateKind.Info, false);
-      var serviceState = serviceHelper.GetState(RdpServiceName);
-      if (serviceState is ServiceControllerStatus.Running) {
-        serviceHelper.Stop(RdpServiceName, TimeSpan.FromSeconds(10));
-      }
-
-      try {
-        if (Directory.Exists(WrapperFolderPath)) {
-          foreach (var file in Directory.GetFiles(WrapperFolderPath, "*", SearchOption.AllDirectories))
-            RemoveFile(file);
-          try {
-            Directory.Delete(WrapperFolderPath, true);
-            logger.Log("Removed folder: " + WrapperFolderPath);
-          }
-          catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
-            DeleteOnReboot(WrapperFolderPath);
-            logger.Log("Folder will be removed after reboot: " + WrapperFolderPath);
+      WithServiceStopped(() => {
+        try {
+          if (Directory.Exists(WrapperFolderPath)) {
+            foreach (var file in Directory.GetFiles(WrapperFolderPath, "*", SearchOption.AllDirectories))
+              RemoveFile(file);
+            try {
+              Directory.Delete(WrapperFolderPath, true);
+              logger.Log("Removed folder: " + WrapperFolderPath);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
+              DeleteOnReboot(WrapperFolderPath);
+              logger.Log("Folder will be removed after reboot: " + WrapperFolderPath);
+            }
           }
         }
-      }
-      catch (Exception ex) {
-        logger.Log(ex.Message, Logger.StateKind.Error);
-      }
-      if (serviceState is ServiceControllerStatus.Running)
-        serviceHelper.Start(RdpServiceName, TimeSpan.FromSeconds(10));
+        catch (Exception ex) {
+          logger.Log(ex.Message, Logger.StateKind.Error);
+        }
+      });
     }
 
     #region supplementary methods
