@@ -541,7 +541,7 @@ namespace rdpWrapper {
       catch (Exception ex) {
         logger.Log(ex.Message, Logger.StateKind.Error); //todo: ignore?
       }
-      if (serviceState.HasValue)
+      if (serviceState is ServiceControllerStatus.Running)
         serviceHelper.Start(RdpServiceName, TimeSpan.FromSeconds(10));
     }
 
