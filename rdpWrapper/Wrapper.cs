@@ -650,14 +650,14 @@ namespace rdpWrapper {
     // A library loaded by a process cannot be deleted but can be renamed: it is moved aside and deleted at the next reboot,
     // so its name is free for a new version.
     private void RemoveFile(string filePath) {
-      if (!File.Exists(filePath) || TryDeleteFile(filePath)) return;
+      if (!File.Exists(filePath) || SafeDeleteFile(filePath, false)) return;
       if (filePath.EndsWith(".old", StringComparison.OrdinalIgnoreCase)) {
         DeleteOnReboot(filePath);
         return;
       }
       // the versions moved aside before are deleted again: the service hardly keeps two of them loaded
       foreach (var old in Directory.GetFiles(Path.GetDirectoryName(filePath), Path.GetFileName(filePath) + "*.old"))
-        TryDeleteFile(old);
+        SafeDeleteFile(old, false);
       var aside = filePath + ".old";
       for (var i = 1; File.Exists(aside); i++)
         aside = $"{filePath}.{i}.old";
@@ -666,30 +666,20 @@ namespace rdpWrapper {
       DeleteOnReboot(aside);
     }
 
-    private static bool TryDeleteFile(string filePath) {
-      try {
-        File.Delete(filePath);
-        return true;
-      }
-      catch (IOException) {
-        return false;
-      }
-      catch (UnauthorizedAccessException) {
-        return false;
-      }
-    }
-
     private void DeleteOnReboot(string path) {
       if (!MoveFileEx(path, null, MoveFileDelayUntilReboot))
         logger.Log($"Failed to schedule removal of '{path}' (code {Marshal.GetLastWin32Error()}).", Logger.StateKind.Error);
     }
 
-    private void SafeDeleteFile(string filePath) {
+    private bool SafeDeleteFile(string filePath, bool logErrors = true) {
       try {
         if (!filePath.IsNullOrEmpty() && File.Exists(filePath)) File.Delete(filePath);
+        return true;
       }
       catch (Exception ex) {
-        logger.Log(ex.Message, Logger.StateKind.Error);
+        if (logErrors)
+          logger.Log(ex.Message, Logger.StateKind.Error);
+        return false;
       }
     }
 
