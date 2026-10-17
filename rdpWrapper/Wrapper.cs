@@ -417,8 +417,8 @@ namespace rdpWrapper {
         logger.Log("Generating config...");
         var workingDir = Path.GetTempPath();
         iniFile = ExtractResourceFile(RdpWrapIniName, workingDir, true);
-        offsetFinder = ExtractResourceFile("RDPWrapOffsetFinder.exe", workingDir, archPrefix: true);
-        zydis = ExtractResourceFile(ZydisDllName, workingDir, archPrefix: true);
+        offsetFinder = ExtractResourceFile("RDPWrapOffsetFinder.exe", workingDir, true, true);
+        zydis = ExtractResourceFile(ZydisDllName, workingDir, true, true);
         var p = StartProcess("cmd", $"/c \"{offsetFinder}\" >> {RdpWrapIniName} & exit", workingDir);
         p.WaitForExit();
         generated = p.ExitCode == 0;
