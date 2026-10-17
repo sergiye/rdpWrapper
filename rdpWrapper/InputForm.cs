@@ -13,10 +13,11 @@ namespace rdpWrapper {
       txtInput.TextChanged += (s, e) => btnOk.Enabled = !txtInput.Text.IsNullOrEmpty();
     }
 
-    internal static DialogResult GetValue(string title, string promptText, out string input) {
+    internal static DialogResult GetValue(string title, string promptText, out string input, bool secret = false) {
 
       var form = new InputForm();
       form.lblText.Text = promptText;
+      form.txtInput.UseSystemPasswordChar = secret;
       form.Text = title;
       Theme.Current.Apply(form);
       var dialogResult = form.ShowDialog();

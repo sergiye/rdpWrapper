@@ -486,7 +486,7 @@ namespace rdpWrapper {
               //  MessageBox.Show($"User '{userName}' is already a member of 'Remote Desktop Users' group.", Updater.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Information);
               //}
               //else {
-                if (InputForm.GetValue(Updater.ApplicationName, "Please enter the 'Password':", out var password) == DialogResult.OK) {
+                if (InputForm.GetValue(Updater.ApplicationName, "Please enter the 'Password':", out var password, true) == DialogResult.OK) {
                   usersManager.SetUserPassword(user, password);
                   usersManager.EnsureUserInRemoteDesktopUsers(user);
                   MessageBox.Show($"User '{user.Name}' is a member of 'Remote Desktop Users' group.", Updater.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Information);
