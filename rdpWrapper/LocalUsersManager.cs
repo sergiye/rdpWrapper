@@ -1,4 +1,4 @@
-﻿using sergiye.Common;
+﻿﻿using sergiye.Common;
 using System;
 using System.Collections.Generic;
 using System.DirectoryServices.AccountManagement;
@@ -19,24 +19,28 @@ namespace rdpWrapper {
       context = new PrincipalContext(ContextType.Machine);
     }
 
-    public UserPrincipal CreateUserIfNotExist(string userName) {
+    public UserPrincipal FindUser(string userName) {
       if (userName.IsNullOrEmpty())
         throw new ArgumentException("The username cannot be empty.");
 
-      var user = UserPrincipal.FindByIdentity(context, userName);
-      if (user == null) {
-        user = new UserPrincipal(context) {
-          Name = userName,
-          PasswordNeverExpires = true,
-          UserCannotChangePassword = false,
-          Enabled = true,
-        };
-        user.Save();
-        logger.Log($"User '{userName}' created.", Logger.StateKind.Info);
-      }
-      else {
-        logger.Log($"User '{userName}' already exists.", Logger.StateKind.Info);
-      }
+      return UserPrincipal.FindByIdentity(context, userName);
+    }
+
+    public UserPrincipal CreateUser(string userName, string password) {
+      if (userName.IsNullOrEmpty())
+        throw new ArgumentException("The username cannot be empty.");
+      if (password.IsNullOrEmpty())
+        throw new ArgumentNullException(nameof(password));
+
+      var user = new UserPrincipal(context) {
+        Name = userName,
+        PasswordNeverExpires = true,
+        UserCannotChangePassword = false,
+        Enabled = true,
+      };
+      user.SetPassword(password);
+      user.Save();
+      logger.Log($"User '{userName}' created.", Logger.StateKind.Info);
       return user;
     }
 

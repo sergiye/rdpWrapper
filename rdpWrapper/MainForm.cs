@@ -481,17 +481,15 @@ namespace rdpWrapper {
               MessageBox.Show($"User '{userName}' is already a member of 'Remote Desktop Users' group.", Updater.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else {
-              var user = usersManager.CreateUserIfNotExist(userName);
-              //if (user.GetAuthorizationGroups().Any(g => g.Sid.Value == LocalUsersManager.RemoteDesktopUsersGroupSid)) {
-              //  MessageBox.Show($"User '{userName}' is already a member of 'Remote Desktop Users' group.", Updater.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Information);
-              //}
-              //else {
-                if (InputForm.GetValue(Updater.ApplicationName, "Please enter the 'Password':", out var password, true) == DialogResult.OK) {
+              var user = usersManager.FindUser(userName);
+              if (InputForm.GetValue(Updater.ApplicationName, "Please enter the 'Password':", out var password, true) == DialogResult.OK) {
+                if (user == null)
+                  user = usersManager.CreateUser(userName, password);
+                else
                   usersManager.SetUserPassword(user, password);
-                  usersManager.EnsureUserInRemoteDesktopUsers(user);
-                  MessageBox.Show($"User '{user.Name}' is a member of 'Remote Desktop Users' group.", Updater.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-              //}
+                usersManager.EnsureUserInRemoteDesktopUsers(user);
+                MessageBox.Show($"User '{user.Name}' is a member of 'Remote Desktop Users' group.", Updater.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+              }
             }
           }
         }
