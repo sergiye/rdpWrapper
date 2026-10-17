@@ -451,9 +451,14 @@ namespace rdpWrapper {
           else {
             var lastModified = File.GetLastWriteTime(wrapperIniLastPath);
             if (lastModified > wrapperIniLastChecked) {
-              var iniContent = File.ReadAllText(wrapperIniLastPath);
-              wrapperIniLastSupported = iniContent.Contains("[" + Wrapper.GetVersionString(versionInfo) + "]");
-              wrapperIniLastChecked = lastModified;
+              // the ini may be locked while it is written: the previous result is kept and it is read again on the next tick
+              try {
+                var iniContent = File.ReadAllText(wrapperIniLastPath);
+                wrapperIniLastSupported = iniContent.Contains("[" + Wrapper.GetVersionString(versionInfo) + "]");
+                wrapperIniLastChecked = lastModified;
+              }
+              catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
+              }
             }
             if (wrapperIniLastSupported) {
               lblSupported.Text = "[fully supported]";
